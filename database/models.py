@@ -41,16 +41,16 @@ class MessageStatus(PyEnum):
 
 
 class Employee(Base):
-    """ Definition of ORM model class/ table 'User' """
+    """ Definition of ORM model class/ table 'Employee' """
 
     __tablename__ = "employees"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4())
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
     name = Column(String)
     whatsapp_phone_number = Column(String, unique=True, nullable=False, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
     role = Column(Enum(UserRole), nullable=False)
-    magic_link_token = Column(String, index=True)
+    magic_link_token = Column(String)
     magic_link_expires_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc),
@@ -66,8 +66,8 @@ class Partner(Base):
 
     __tablename__ = "partners"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    name = Column(String, nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
     contact_person = Column(String)
     email = Column(String)
     phone_number = Column(String)
@@ -76,7 +76,7 @@ class Partner(Base):
     address_zip_code = Column(String)
     address_country = Column(String)
     notes = Column(Text)
-    main_contact_user_id = Column(UUID(as_uuid=True), ForeignKey("employee.id"), nullable=False, index=True)
+    main_contact_employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
 
@@ -89,8 +89,8 @@ class Product(Base):
 
     __tablename__ = "products"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    name = Column(String, nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
     description = Column(Text)
     length = Column(Numeric(10, 2))
     height = Column(Numeric(10, 2))
@@ -110,8 +110,8 @@ class WhatsappMessageLog(Base):
 
     __tablename__ = "whatsapp_message_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("employee.id"), index=True, nullable=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
     direction = Column(Enum(MessageDirection), nullable=False)
     raw_message_content = Column(Text, nullable=False)
     ai_interpreted_command = Column(JSONB)
@@ -121,4 +121,4 @@ class WhatsappMessageLog(Base):
     timestamp = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc), index=True)
 
     # Definition of relationship to other models
-    user = relationship("Employee", back_populates="message_logs")
+    employee = relationship("Employee", back_populates="message_logs")
