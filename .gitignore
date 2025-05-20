@@ -4,10 +4,15 @@ venv/
 
 # environment variable file
 .env
+.env.*
 
 # Python Byte-Code
 __pycache__/
 *.pyc
+
+.pytest_cache/
+.mypy_cache/
+
 
 # log files
 *.log
