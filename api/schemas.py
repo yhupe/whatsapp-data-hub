@@ -56,3 +56,5 @@ class Employee(EmployeeBase):
 
     # Config allows Pydantic to load data from SQLAlchemy models
     model_config = ConfigDict(from_attributes=True)
+
+
