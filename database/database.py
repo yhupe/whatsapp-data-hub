@@ -1,37 +1,41 @@
 import os
-from dotenv import load_dotenv
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
-# load environmental variables
-load_dotenv()
-
-# load database url from environmental variables
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-# raise error if database url does not exist
-if DATABASE_URL is None:
-    raise Exception("DATABASE_URL environment variable not set.")
-
-# set up SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
 
 # set up declarative base
 Base = declarative_base()
 
-# set up SessionLocal class
-# autocommit=False : database transactions need to be committed explicitly
-# autoflush=False : changes won't be sent to the database automatically unless commit or flush is called
-# bind=engine : session is linked to engine as created above
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Placeholders
+_engine = None
+_SessionLocal = None
 
-# set up the dependency to open one DB session per request.
-# After the request was successful or even failed, the session will be closed
-# (seems to be standard using FastAPI)
+def get_engine():
+    global _engine # Wir wollen die globale Variable _engine ändern
+    if _engine is None: # Nur erstellen, wenn sie noch nicht existiert
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            # Dieser Fehler wird nur ausgelöst, wenn DATABASE_URL wirklich nicht gesetzt ist.
+            # In den Tests sollte es durch .env.test gesetzt werden, in der Haupt-App durch main.py.
+            raise Exception("DATABASE_URL environment variable not set.")
+
+        # Hier wird die Engine erstellt (Passe dies an dein PostgreSQL an)
+        _engine = create_engine(database_url)
+    return _engine
+
+
+def get_session_local():
+    global _SessionLocal # Wir wollen die globale Variable _SessionLocal ändern
+    if _SessionLocal is None: # Nur erstellen, wenn sie noch nicht existiert
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+    return _SessionLocal
+
+
 def get_db():
-    db = SessionLocal()
+    # NEU: Ruft get_session_local() auf, um die SessionLocal-Klasse zu bekommen,
+    # und dann () um eine Session-Instanz zu erstellen.
+    db = get_session_local()()
     try:
         yield db
     finally:
