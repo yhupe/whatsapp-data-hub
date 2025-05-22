@@ -74,3 +74,38 @@ class Employee(EmployeeBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+
+class WhatsappMessageLogBase(BaseModel):
+    """ Pydantic model for WhatsappMessageLog. """
+
+    employee_id: Optional[uuid.UUID] = None
+    whatsapp_customer_phone_number: str = Field(pattern=r"^\+\d{10,15}$")
+    direction: MessageDirection
+    raw_message_content: str
+    status: MessageStatus
+
+
+class WhatsappMessageLogCreate(WhatsappMessageLogBase):
+    """ Pydantic model for creating a WhatsappMessageLog entry.
+    Fields like id, timestamp, AI interpretation, and system response
+    are created by the server automatically
+    and are not part of the create request.
+    """
+
+    pass
+
+
+class WhatsappMessageLog(WhatsappMessageLogBase):
+    """ Model (inheriting from WhatsappMessageLogBase) for the response of the API.
+    Typically containing all fields that are relevant for the client, including
+    server-generated fields and fields added during processing.
+    """
+
+    id: uuid.UUID
+    ai_interpreted_command: Optional[str] = None
+    system_response_content: Optional[str] = None
+    error_message: Optional[str] = None
+    timestamp: datetime.datetime
+
+    # Config allows Pydantic to load data from SQLAlchemy models
+    model_config = ConfigDict(from_attributes=True)
