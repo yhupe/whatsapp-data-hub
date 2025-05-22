@@ -4,7 +4,7 @@ from typing import Optional
 from enum import Enum as PyEnum
 
 # Import BaseModel and ConfigDict for pydantic v2+
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 # IMport of Enums from SQLAlchemy models
 from database.models import UserRole, MessageDirection, MessageStatus
@@ -15,9 +15,9 @@ class EmployeeBase(BaseModel):
     Common field for create and read requests.
     """
 
-    name: str
-    whatsapp_phone_number: str
-    email: str
+    name: str = Field(min_length=1, max_length=255)
+    whatsapp_phone_number: str = Field(pattern=r"^\+\d{10,15}$")
+    email: EmailStr
     role: UserRole
 
 
@@ -36,10 +36,26 @@ class EmployeeUpdate(EmployeeBase):
     All fields are optional because you don't want to update everything at the same time
     """
 
-    name: Optional[str] = None
-    whatsapp_phone_number: Optional[str] = None
-    email: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    whatsapp_phone_number: Optional[str] = Field(None, pattern=r"^\+\d{10,15}$")
+    email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
+
+    @model_validator(mode='after')
+    def check_at_least_one_field(self):
+        """ Validation that at least one field is being updated.
+        model_dump(exclude_none=True) returns all fields that are not 'None'.
+
+        Raises: ValueError: If no field is given (or not 'None') to update
+
+        Returns: self: The current instance of EmployeeUpdate object that's being validated
+        """
+
+        # check that at least one field is not 'None'
+        if not any(self.model_dump(exclude_none=True).values()):
+            raise ValueError(
+                "At least one field (name, whatsapp_phone_number, email, role) must be provided for update.")
+        return self
 
 
 class Employee(EmployeeBase):

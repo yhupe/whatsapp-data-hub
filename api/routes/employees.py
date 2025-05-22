@@ -1,4 +1,5 @@
 # Import of necessary parts of FastAPI
+from dns.e164 import query
 from fastapi import APIRouter, Depends, HTTPException, status
 
 # Import of or_ module as a filtering condition to avoid using '|'
@@ -7,6 +8,7 @@ from sqlalchemy import or_
 # Import of SQLAlchemy Session (for type hints)
 from sqlalchemy.orm import Session
 
+from api.schemas import EmployeeUpdate
 # Import of SQLAlchemy ORM models
 from database import models
 
@@ -16,7 +18,7 @@ from api import schemas
 # Import of database dependency
 from database.database import get_db
 
-import uuid
+from uuid import UUID
 from typing import List, Optional
 
 
@@ -76,6 +78,31 @@ def create_employee(
     return db_employee
 
 
+@employees_router.get("/{employee_id}", response_model=schemas.Employee, status_code=status.HTTP_200_OK)
+def get_employee_by_id(
+    employee_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """ Endpoint to get an employee by ID.
+
+    Args:
+        employee_id (UUID): A unique identifier in UUID format.
+        db (Session = Depends(get_db)): The database session dependency.
+
+    Returns: db_employee: The newly created employee object incl. the automatically generated
+        ID and timestamps.
+
+    Raises: HTTPException: If the employee cannot be found by the passed ID (HTTP 404 Not Found)
+
+    """
+
+    db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    if not db_employee:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    return db_employee
+
+
 @employees_router.get("/", response_model=List[schemas.Employee])
 def get_employees(
         name_query: Optional[str] = None,
@@ -104,3 +131,62 @@ def get_employees(
 
     return employees
 
+@employees_router.patch("/{employee_id}", response_model=schemas.Employee, status_code=status.HTTP_200_OK)
+def update_employee(
+        employee_id: UUID,
+        employee_update: EmployeeUpdate,
+        db: Session = Depends(get_db)
+):
+    """ Endpoint to update at least one field of an existing employee.
+
+    Args:
+        employee_id (UUID): A unique identifier in UUID format.
+        employee_update (EmployeeUpdate): An EmployeeUpdate object containing the updates.
+        db (Session = Depends(get_db)): The database session dependency.
+
+    Returns: db_employee: The updated Employee object.
+
+    Raises:
+        HTTPException:
+            - 404 Not found: If the ID searched after does not match with an
+            employee from the database.
+            - 400 Bad request: If there is a database error like unique constraint violation
+            (for example same phone number or e-mail)
+            - 422 Unprocessable Entity: If the input data is invalid (Pydantic)
+
+
+    """
+
+    db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+
+    if not db_employee:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found"
+        )
+
+    # Extracting updated fields from employee_update object.
+    update_data = employee_update.model_dump(exclude_unset=True)
+
+    # updated fields of the Employee object
+    for key, value in update_data.items():
+        # sets the attribute directly to the new value
+        setattr(db_employee, key, value)
+
+    try:
+        db.add(db_employee)
+        db.commit()
+        db.refresh(db_employee)
+        return db_employee
+
+    except Exception as e:
+        db.rollback()
+
+        # If the database throws an error, check if it has the 'orig' attribute from
+        # the original database error exception and raise it. If not, show the SQLAlchemy error exception.
+        error_detail = str(e.orig) if hasattr(e, 'orig') else str(e)
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error updating employee: {error_detail}"
+        )
