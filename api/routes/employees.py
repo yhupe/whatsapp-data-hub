@@ -1,6 +1,6 @@
 # Import of necessary parts of FastAPI
 from dns.e164 import query
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 # Import of or_ module as a filtering condition to avoid using '|'
 from sqlalchemy import or_
@@ -190,3 +190,35 @@ def update_employee(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error updating employee: {error_detail}"
         )
+
+
+@employees_router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_employee_by_id(
+        employee_id: UUID,
+        db: Session = Depends(get_db)
+):
+    """ Endpoint to delete an employee by id.
+
+    Args:
+        employee_id (UUID): A unique identifier in UUID format.
+        db (Session = Depends(get_db)): The database session dependency.
+
+    Returns: Response(status_code=status.HTTP_204_NO_CONTENT): Returns a response without body.
+
+    Raises:
+        HTTPException: If the employee cannot be found by the passed ID (HTTP 404 Not Found)
+    """
+
+    db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+
+    if not db_employee:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found"
+        )
+
+    db.delete(db_employee)
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+

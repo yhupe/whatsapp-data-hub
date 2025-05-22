@@ -467,3 +467,48 @@ def test_update_employee_no_data_provided(client: TestClient, db_session_for_tes
 
     # Check that a more specific error note is thrown by the pydantic @model_validator
     assert "At least one field (name, whatsapp_phone_number, email, role) must be provided for update." in response.json()["detail"][0]["msg"]
+
+
+def test_delete_employee_success(client: TestClient, db_session_for_test: Session):
+    """
+    Test that an employee can be deleted.
+    """
+
+    employee_data = {
+        "name": "Employee to Delete",
+        "whatsapp_phone_number": "+4998765432100",
+        "email": "delete_me@example.com",
+        "role": "general_user"
+    }
+    response_create = client.post("/employees/", json=employee_data)
+    assert response_create.status_code == 201
+    created_employee = response_create.json()
+    employee_id = created_employee["id"]
+
+    # Delete request
+    response_delete = client.delete(f"/employees/{employee_id}")
+
+
+    assert response_delete.status_code == 204
+    # checks that the body is empty
+    assert not response_delete.content
+
+    # Check that the employee really is deleted and returns 404 as expected
+    response_get = client.get(f"/employees/{employee_id}")
+    assert response_get.status_code == 404
+    assert response_get.json() == {"detail": "Employee not found"}
+
+
+def test_delete_employee_not_found(client: TestClient, db_session_for_test: Session):
+    """
+    Test that deleting a non-existent employee returns 404 Not Found.
+    """
+
+    # generating a non-existing uuid
+    non_existent_id = str(uuid.UUID(int=0))
+
+    # delete request
+    response = client.delete(f"/employees/{non_existent_id}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Employee not found"}
