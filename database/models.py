@@ -111,7 +111,7 @@ class WhatsappMessageLog(Base):
     __tablename__ = "whatsapp_message_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
+    employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
     direction = Column(Enum(MessageDirection), nullable=False)
     raw_message_content = Column(Text, nullable=False)
     ai_interpreted_command = Column(JSONB)
