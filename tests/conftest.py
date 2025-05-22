@@ -59,8 +59,8 @@ def db_session_for_test(test_engine):
         yield db
     finally:
         # After test: close the session and rollback of transaction
-        db.close()
         transaction.rollback()
+        db.close()
         connection.close()
 
         # removal of overridden dependency

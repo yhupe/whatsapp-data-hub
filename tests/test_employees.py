@@ -282,3 +282,188 @@ def test_search_employee_partial_and_case_insensitive(client: TestClient):
         employee_data_4["name"]
     }
     assert returned_names == expected_names
+
+
+def test_update_employee_success(client: TestClient, db_session_for_test: Session):
+    """
+    Test that an employee can be successfully updated with partial data.
+    """
+
+    employee_data = {
+        "name": "Original Name",
+        "whatsapp_phone_number": "+4912345678900",
+        "email": "original@example.com",
+        "role": "general_user"
+    }
+    response = client.post("/employees/", json=employee_data)
+    assert response.status_code == 201
+    created_employee = response.json()
+    employee_id = created_employee["id"]
+
+    # updated name and email address
+    update_data = {
+        "name": "Updated Name",
+        "email": "updated@example.com"
+    }
+
+    # patch request
+    response = client.patch(f"/employees/{employee_id}", json=update_data)
+
+    assert response.status_code == 200
+    updated_employee = response.json()
+
+    # check for correct id and that updated name and email address are correct
+    assert updated_employee["id"] == employee_id
+    assert updated_employee["name"] == "Updated Name"
+    assert updated_employee["email"] == "updated@example.com"
+
+    # Check that unchanged fields are really unchanged
+    assert updated_employee["whatsapp_phone_number"] == employee_data["whatsapp_phone_number"]
+    assert updated_employee["role"] == employee_data["role"]
+
+    # Get request to check that the updates are saved to the database correctly
+    get_response = client.get(f"/employees/{employee_id}")
+    assert get_response.status_code == 200
+    fetched_employee = get_response.json()
+    assert fetched_employee["name"] == "Updated Name"
+    assert fetched_employee["email"] == "updated@example.com"
+
+
+def test_update_employee_not_found(client: TestClient, db_session_for_test: Session):
+    """
+    Test that attempting to update a non-existent employee returns 404 Not Found.
+    """
+
+    # An uuid that definitely does not exist
+    non_existent_id = "00000000-0000-0000-0000-000000000000"
+    update_data = {"name": "Non Existent Update"}
+
+    # Try to patch an employee with non-existent id
+    response = client.patch(f"/employees/{non_existent_id}", json=update_data)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Employee not found"
+
+
+def test_update_employee_invalid_data(client: TestClient, db_session_for_test: Session):
+    """
+    Test that updating an employee with invalid data (wrong email format)
+    returns 422 Unprocessable Entity due to Pydantic validation.
+    """
+
+    # Create employee
+    employee_data = {
+        "name": "Valid User",
+        "whatsapp_phone_number": "+4998765432100",
+        "email": "valid@example.com",
+        "role": "general_user"
+    }
+    response = client.post("/employees/", json=employee_data)
+    assert response.status_code == 201
+    created_employee = response.json()
+    employee_id = created_employee["id"]
+
+    # Try to update an invalid email address format
+    invalid_update_data = {"email": "invalid-email-format"}
+    response = client.patch(f"/employees/{employee_id}", json=invalid_update_data)
+
+    # expecting pydantic validation error
+    assert response.status_code == 422
+    assert "value is not a valid email address" in response.json()["detail"][0]["msg"]
+
+
+def test_update_employee_duplicate_email(client: TestClient, db_session_for_test: Session):
+    """
+    Test that updating an employee with an email or phone number that already exists
+    for another employee returns 400 Bad Request (unique constraint violation).
+    """
+
+    employee_1_data = {
+        "name": "Employee One",
+        "whatsapp_phone_number": "+4911111111111",
+        "email": "alpha@example.com",
+        "role": "admin"
+    }
+    employee_2_data = {
+        "name": "Employee 3",
+        "whatsapp_phone_number": "+4922222222222",
+        "email": "beta@example.com",
+        "role": "general_user"
+    }
+
+    response_1 = client.post("/employees/", json=employee_1_data)
+    assert response_1.status_code == 201
+    created_employee_1 = response_1.json()
+    employee_1_id = created_employee_1["id"]
+
+    response_2 = client.post("/employees/", json=employee_2_data)
+    assert response_2.status_code == 201
+    created_employee_2 = response_2.json()
+
+    # Case 1: duplicate email address
+    duplicate_email_update = {"email": "beta@example.com"}
+    response = client.patch(f"/employees/{employee_1_id}", json=duplicate_email_update)
+    assert response.status_code == 400
+    assert "duplicate key value violates unique constraint" in response.json()["detail"]
+    assert "ix_employees_email" in response.json()["detail"]
+
+
+def test_update_employee_duplicate_phone_number(client: TestClient, db_session_for_test: Session):
+    """
+    Test that updating an employee with a phone number that already exists for another employee
+    returns 400 Bad Request.
+    """
+    # Zwei Mitarbeiter erstellen
+    employee_1_data = {
+        "name": "Employee Three",
+        "whatsapp_phone_number": "+4933333333333",
+        "email": "gamma@example.com",
+        "role": "admin"
+    }
+    employee_2_data = {
+        "name": "Employee Four",
+        "whatsapp_phone_number": "+4944444444444",
+        "email": "delta@example.com",
+        "role": "general_user"
+    }
+
+    response_1 = client.post("/employees/", json=employee_1_data)
+    assert response_1.status_code == 201
+    created_employee_1 = response_1.json()
+    employee_1_id = created_employee_1["id"]
+
+    response_2 = client.post("/employees/", json=employee_2_data)
+    assert response_2.status_code == 201
+    created_employee_2 = response_2.json()
+
+    # Case 2: duplicate phone number
+    duplicate_phone_update = {"whatsapp_phone_number": "+4944444444444"}
+    response = client.patch(f"/employees/{employee_1_id}", json=duplicate_phone_update)
+    assert response.status_code == 400
+    assert "duplicate key value violates unique constraint" in response.json()["detail"]
+    assert "ix_employees_whatsapp_phone_number" in response.json()["detail"]
+
+
+def test_update_employee_no_data_provided(client: TestClient, db_session_for_test: Session):
+    """
+    Test that attempting to update an employee by sending an empty JSON body
+    returns 422 (at_least_one_field check in the Pydantic model).
+    """
+
+    employee_data = {
+        "name": "Test User",
+        "whatsapp_phone_number": "+4912341234123",
+        "email": "test@example.com",
+        "role": "admin"
+    }
+    response = client.post("/employees/", json=employee_data)
+    assert response.status_code == 201
+    created_employee = response.json()
+    employee_id = created_employee["id"]
+
+    # Empty update object
+    empty_update_data = {}
+    response = client.patch(f"/employees/{employee_id}", json=empty_update_data)
+    assert response.status_code == 422
+
+    # Check that a more specific error note is thrown by the pydantic @model_validator
+    assert "At least one field (name, whatsapp_phone_number, email, role) must be provided for update." in response.json()["detail"][0]["msg"]
