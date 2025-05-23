@@ -119,6 +119,7 @@ def get_employees(
     Returns: List[employee_schemas.Employee]: A list of all employees,
         if name_query provided: A list of all employees matching the name query.
 
+    Raises: HTTPException: If the input data is invalid (422 Unprocessable Entity, Pydantic)
     """
 
     # 'query' is set to query all instances in the Employee table
@@ -154,8 +155,6 @@ def update_employee(
             - 400 Bad request: If there is a database error like unique constraint violation
             (for example same phone number or e-mail)
             - 422 Unprocessable Entity: If the input data is invalid (Pydantic)
-
-
     """
 
     db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
