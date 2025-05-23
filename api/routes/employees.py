@@ -118,6 +118,7 @@ def get_employees(
 
     Returns: List[employee_schemas.Employee]: A list of all employees,
         if name_query provided: A list of all employees matching the name query.
+
     """
 
     # 'query' is set to query all instances in the Employee table

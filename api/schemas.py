@@ -75,18 +75,17 @@ class Employee(EmployeeBase):
 
 
 
-class WhatsappMessageLogBase(BaseModel):
-    """ Pydantic model for WhatsappMessageLog. """
+class MessageLogBase(BaseModel):
+    """ Pydantic model for MessageLog. """
 
     employee_id: Optional[uuid.UUID] = None
-    whatsapp_customer_phone_number: str = Field(pattern=r"^\+\d{10,15}$")
     direction: MessageDirection
     raw_message_content: str
     status: MessageStatus
 
 
-class WhatsappMessageLogCreate(WhatsappMessageLogBase):
-    """ Pydantic model for creating a WhatsappMessageLog entry.
+class MessageLogCreate(MessageLogBase):
+    """ Pydantic model for creating a MessageLog entry.
     Fields like id, timestamp, AI interpretation, and system response
     are created by the server automatically
     and are not part of the create request.
@@ -95,8 +94,8 @@ class WhatsappMessageLogCreate(WhatsappMessageLogBase):
     pass
 
 
-class WhatsappMessageLog(WhatsappMessageLogBase):
-    """ Model (inheriting from WhatsappMessageLogBase) for the response of the API.
+class MessageLog(MessageLogBase):
+    """ Model (inheriting from MessageLogBase) for the response of the API.
     Typically containing all fields that are relevant for the client, including
     server-generated fields and fields added during processing.
     """
