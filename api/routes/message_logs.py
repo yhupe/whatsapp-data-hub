@@ -81,6 +81,7 @@ def get_latest_message_log(
                 - 422 Unprocessable Entity, Pydantic: If the input data is invalid
         """
 
+    # Querying the latest added message to the table by sorting in descending order by timestamp
     db_message_log = (db.query(models.WhatsappMessageLog)
                       .order_by(desc(models.WhatsappMessageLog.timestamp))
                       .first()
@@ -92,8 +93,10 @@ def get_latest_message_log(
             detail="No message logs found."
         )
 
+    # extracting Employee.name from employee_id in message_log
     db_employee = db.query(models.Employee).filter(models.Employee.id == db_message_log.employee_id).first()
 
+    # Logging new message status to the console
     print(f"Message log: from/to: '{db_employee.name}', "
           f"Status={db_message_log.status.value}, "
           f"Direction={db_message_log.direction.value}, "
