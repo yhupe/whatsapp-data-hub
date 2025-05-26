@@ -79,7 +79,7 @@ class EmployeeService:
         db_employee = self.get_employee_by_id(employee_id)
 
         if not db_employee:
-            raise ValueError("Employee not found.")
+            raise ValueError("Employee not found")
 
         update_data = employee_update_data.model_dump(exclude_unset=True)
 
@@ -106,7 +106,7 @@ class EmployeeService:
         db_employee = self.get_employee_by_id(employee_id)
 
         if not db_employee:
-            raise ValueError("Employee not found.")
+            raise ValueError("Employee not found")
 
         self.db.delete(db_employee)
         self.db.commit()

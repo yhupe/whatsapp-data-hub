@@ -138,19 +138,20 @@ def update_employee(
             employee_id=employee_id,
             employee_update_data=employee_update_data
         )
-
-        if not db_employee:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Employee not found"
-            )
         return db_employee
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+
+        if "Employee not found" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
 
 
 @employees_router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -170,13 +171,18 @@ def delete_employee_by_id(
         HTTPException: If the employee cannot be found by the passed ID (HTTP 404 Not Found)
     """
 
-    deleted = employee_service.delete_employee(employee_id=employee_id)
+    try:
+        employee_service.delete_employee(employee_id=employee_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found"
-        )
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
+    except ValueError as e:
+        if "Employee not found" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
