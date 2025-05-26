@@ -8,7 +8,7 @@ from sqlalchemy import or_
 # Import of SQLAlchemy Session (for type hints)
 from sqlalchemy.orm import Session
 
-from api.schemas import EmployeeUpdate
+from api.schemas import EmployeeUpdate, EmployeeCreate
 # Import of SQLAlchemy ORM models
 from database import models
 
@@ -17,6 +17,9 @@ from api import schemas
 
 # Import of database dependency
 from database.database import get_db
+
+# Import of EmployeeService
+from services.employee_service import EmployeeService, get_employee_service
 
 from uuid import UUID
 from typing import List, Optional
@@ -30,15 +33,15 @@ employees_router = APIRouter(
 
 @employees_router.post("/", response_model=schemas.Employee, status_code=status.HTTP_201_CREATED)
 def create_employee(
-    employee: schemas.EmployeeCreate,
-    db: Session = Depends(get_db)
+        employee_data: EmployeeCreate,
+        employee_service: EmployeeService = Depends(get_employee_service)
 ):
     """ Endpoint to create a new employee.
 
     Args:
-        employee (schemas.EmployeeCreate): The Pydantic model containing the details
+        employee_data (schemas.EmployeeCreate): The Pydantic model containing the details
             for a new employee.
-        db (Session = Depends(get_db)): The database session dependency.
+        employee_service (EmployeeService): The injected EmployeeService instance.
 
     Returns: db_employee: The newly created employee object incl. the automatically generated
         ID and timestamps.
@@ -48,46 +51,26 @@ def create_employee(
             already in the database (HTTP 400 Bad Request).
     """
 
-    # Check whether an employee with the exact e-mail / phone number already exists
-    db_employee = db.query(models.Employee).filter(
-        or_(
-            models.Employee.whatsapp_phone_number == employee.whatsapp_phone_number,
-            models.Employee.email == employee.email
-        )
-    ).first()
-
-    if db_employee:
+    try:
+        db_employee = employee_service.create_employee(employee_data=employee_data)  # <-- Aufruf des Service
+        return db_employee
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Employee with this phone number or email already exists."
+            detail=str(e)
         )
-
-    db_employee = models.Employee(
-        name=employee.name,
-        whatsapp_phone_number=employee.whatsapp_phone_number,
-        email=employee.email,
-        role=employee.role
-    )
-
-    db.add(db_employee)
-
-    db.commit()
-
-    db.refresh(db_employee)
-
-    return db_employee
 
 
 @employees_router.get("/{employee_id}", response_model=schemas.Employee, status_code=status.HTTP_200_OK)
 def get_employee_by_id(
     employee_id: UUID,
-    db: Session = Depends(get_db)
+    employee_service: EmployeeService = Depends(get_employee_service)
 ):
     """ Endpoint to get an employee by ID.
 
     Args:
         employee_id (UUID): A unique identifier in UUID format.
-        db (Session = Depends(get_db)): The database session dependency.
+        employee_service (EmployeeService): The injected EmployeeService instance.
 
     Returns: db_employee: The newly created employee object incl. the automatically generated
         ID and timestamps.
@@ -96,7 +79,7 @@ def get_employee_by_id(
 
     """
 
-    db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    db_employee = employee_service.get_employee_by_id(employee_id=employee_id)
     if not db_employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
 
@@ -106,7 +89,7 @@ def get_employee_by_id(
 @employees_router.get("/", response_model=List[schemas.Employee])
 def get_employees(
         name_query: Optional[str] = None,
-        db: Session = Depends(get_db)
+        employee_service: EmployeeService = Depends(get_employee_service)
 ):
     """ Endpoint to retrieve list of employees.
     case-insensitive, if name_query is provided, filters employees
@@ -114,7 +97,7 @@ def get_employees(
 
     Args:
         name_query (Optional[str]): An optional string to filter employees by name.
-        db (Session = Depends(get_db)): The database session dependency.
+        employee_service (EmployeeService): The injected EmployeeService instance.
 
     Returns: List[employee_schemas.Employee]: A list of all employees,
         if name_query provided: A list of all employees matching the name query.
@@ -122,29 +105,22 @@ def get_employees(
     Raises: HTTPException: If the input data is invalid (422 Unprocessable Entity, Pydantic)
     """
 
-    # 'query' is set to query all instances in the Employee table
-    query = db.query(models.Employee)
-
-    # if optional 'name_query' is provided, query is set to all instances matching the filter
-    if name_query:
-        query = query.filter(models.Employee.name.ilike(f"%{name_query}%"))
-
-    employees = query.all()
+    employees = employee_service.get_all_employees(name_query=name_query)
 
     return employees
 
 @employees_router.patch("/{employee_id}", response_model=schemas.Employee, status_code=status.HTTP_200_OK)
 def update_employee(
         employee_id: UUID,
-        employee_update: EmployeeUpdate,
-        db: Session = Depends(get_db)
+        employee_update_data: EmployeeUpdate,
+        employee_service: EmployeeService = Depends(get_employee_service)
 ):
     """ Endpoint to update at least one field of an existing employee.
 
     Args:
         employee_id (UUID): A unique identifier in UUID format.
-        employee_update (EmployeeUpdate): An EmployeeUpdate object containing the updates.
-        db (Session = Depends(get_db)): The database session dependency.
+        employee_update_data (EmployeeUpdate): An EmployeeUpdate object containing the updates.
+        employee_service (EmployeeService): The injected EmployeeService instance.
 
     Returns: db_employee: The updated Employee object.
 
@@ -157,51 +133,36 @@ def update_employee(
             - 422 Unprocessable Entity: If the input data is invalid (Pydantic)
     """
 
-    db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
-
-    if not db_employee:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found"
+    try:
+        db_employee = employee_service.update_employee(
+            employee_id=employee_id,
+            employee_update_data=employee_update_data
         )
 
-    # Extracting updated fields from employee_update object.
-    update_data = employee_update.model_dump(exclude_unset=True)
-
-    # updated fields of the Employee object
-    for key, value in update_data.items():
-        # sets the attribute directly to the new value
-        setattr(db_employee, key, value)
-
-    try:
-        db.add(db_employee)
-        db.commit()
-        db.refresh(db_employee)
+        if not db_employee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee not found"
+            )
         return db_employee
 
-    except Exception as e:
-        db.rollback()
-
-        # If the database throws an error, check if it has the 'orig' attribute from
-        # the original database error exception and raise it. If not, show the SQLAlchemy error exception.
-        error_detail = str(e.orig) if hasattr(e, 'orig') else str(e)
-
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error updating employee: {error_detail}"
+            detail=str(e)
         )
 
 
 @employees_router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_employee_by_id(
         employee_id: UUID,
-        db: Session = Depends(get_db)
+        employee_service: EmployeeService = Depends(get_employee_service)
 ):
     """ Endpoint to delete an employee by id.
 
     Args:
         employee_id (UUID): A unique identifier in UUID format.
-        db (Session = Depends(get_db)): The database session dependency.
+        employee_service (EmployeeService): The injected EmployeeService instance.
 
     Returns: Response(status_code=status.HTTP_204_NO_CONTENT): Returns a response without body.
 
@@ -209,16 +170,13 @@ def delete_employee_by_id(
         HTTPException: If the employee cannot be found by the passed ID (HTTP 404 Not Found)
     """
 
-    db_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    deleted = employee_service.delete_employee(employee_id=employee_id)
 
-    if not db_employee:
+    if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Employee not found"
         )
-
-    db.delete(db_employee)
-    db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
