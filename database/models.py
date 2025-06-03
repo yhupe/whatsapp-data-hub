@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 
 # import of types and functions from SQLAlchemy
 from sqlalchemy import (
-    Boolean, Column, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
+    Boolean, BigInteger, Column, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
 )
 
 # import of postgreSQL specific types from SQLAlchemy
@@ -32,7 +32,7 @@ class MessageDirection(PyEnum):
     outbound = "outbound"
 
 class MessageStatus(PyEnum):
-    """ Class to define status of whatsapp message Enums according to DBMS scheme"""
+    """ Class to define status of message Enums according to DBMS scheme"""
 
     received = "received"
     processed = "processed"
@@ -47,18 +47,20 @@ class Employee(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
-    whatsapp_phone_number = Column(String, unique=True, nullable=False, index=True)
+    phone_number = Column(String, unique=True, nullable=False, index=True)
+    telegram_id = Column(BigInteger, unique=True, index=True, nullable=True)
     email = Column(String, unique=True, nullable=False, index=True)
     role = Column(Enum(UserRole), nullable=False)
     magic_link_token = Column(String)
     magic_link_expires_at = Column(DateTime(timezone=True))
+    is_authenticated = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc),
                         onupdate=datetime.datetime.now(datetime.timezone.utc))
 
     # Definition of relationship to other models
     partners = relationship("Partner", back_populates="main_contact_employee")
-    message_logs = relationship("WhatsappMessageLog", back_populates="employee")
+    message_logs = relationship("MessageLog", back_populates="employee")
 
 
 class Partner(Base):
@@ -105,13 +107,14 @@ class Product(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
 
 
-class WhatsappMessageLog(Base):
-    """ Definition of ORM model class/ table 'WhatsappMessageLog' """
+class MessageLog(Base):
+    """ Definition of ORM model class/ table 'MessageLog' """
 
-    __tablename__ = "whatsapp_message_logs"
+    __tablename__ = "message_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
+    phone_number = Column(String, nullable=False, index=True)
     direction = Column(Enum(MessageDirection), nullable=False)
     raw_message_content = Column(Text, nullable=False)
     ai_interpreted_command = Column(JSONB)

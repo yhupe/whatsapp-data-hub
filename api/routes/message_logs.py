@@ -36,9 +36,9 @@ def create_message_log(
     """ Endpoint to create message logs.
 
     Args:
-        message_log_data (WhatsappMessageLogCreate): The Pydantic model containing the details
+        message_log_data (MessageLogCreate): The Pydantic model containing the details
             for a new message log.
-        message_log_service (WhatsappMessageLogService): The injected message log service instance.
+        message_log_service (MessageLogService): The injected message log service instance.
 
     Returns: db_message_log: The newly created message_log object incl. the automatically generated
         ID and timestamp.
@@ -69,7 +69,7 @@ def get_latest_message_log(
     """ Endpoint to get message logs and print them as logs to the console.
 
         Args:
-            message_log_service (WhatsappMessageLogService): The injected message log service instance.
+            message_log_service (MessageLogService): The injected message log service instance.
 
         Returns: db_message_log:
 
@@ -79,7 +79,7 @@ def get_latest_message_log(
                 - 422 Unprocessable Entity, Pydantic: If the input data is invalid
         """
 
-    db_message_log = message_log_service.get_latest_message_log()  # <-- Aufruf des Service
+    db_message_log = message_log_service.get_latest_message_log()
 
     if not db_message_log:
         raise HTTPException(

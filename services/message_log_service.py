@@ -20,17 +20,18 @@ class MessageLogService:
     def create_message_log(
         self,
         message_log_data: MessageLogCreate
-    ) -> models.WhatsappMessageLog:
+    ) -> models.MessageLog:
 
         """
         Creates a new message log entry in the database.
         """
 
-        db_message_log = models.WhatsappMessageLog(
+        db_message_log = models.MessageLog(
             employee_id=message_log_data.employee_id,
             direction=message_log_data.direction,
             raw_message_content=message_log_data.raw_message_content,
-            status=message_log_data.status
+            status=message_log_data.status,
+            phone_number=message_log_data.phone_number
         )
 
         self.db.add(db_message_log)
@@ -39,13 +40,13 @@ class MessageLogService:
         return db_message_log
 
 
-    def get_latest_message_log(self) -> Optional[models.WhatsappMessageLog]:
+    def get_latest_message_log(self) -> Optional[models.MessageLog]:
         """
         Retrieves the most recently added message log entry.
         """
         return (
-            self.db.query(models.WhatsappMessageLog)
-            .order_by(desc(models.WhatsappMessageLog.timestamp))
+            self.db.query(models.MessageLog)
+            .order_by(desc(models.MessageLog.timestamp))
             .first()
         )
 

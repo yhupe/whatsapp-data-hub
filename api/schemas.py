@@ -1,10 +1,11 @@
 import uuid
 import datetime
-from typing import Optional
+from typing import Optional, Any
 from enum import Enum as PyEnum
 
 # Import BaseModel and ConfigDict for pydantic v2+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from sqlalchemy import Boolean
 
 # IMport of Enums from SQLAlchemy models
 from database.models import UserRole, MessageDirection, MessageStatus
@@ -16,7 +17,8 @@ class EmployeeBase(BaseModel):
     """
 
     name: str = Field(min_length=1, max_length=255)
-    whatsapp_phone_number: str = Field(pattern=r"^\+\d{10,15}$")
+    phone_number: Optional[str] = Field(None, pattern=r"^\+\d{10,15}$")
+    telegram_id : Optional[int] = None
     email: EmailStr
     role: UserRole
 
@@ -37,9 +39,11 @@ class EmployeeUpdate(EmployeeBase):
     """
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    whatsapp_phone_number: Optional[str] = Field(None, pattern=r"^\+\d{10,15}$")
+    phone_number: Optional[str] = Field(None, pattern=r"^\+\d{10,15}$")
+    telegram_id: Optional[int] = None
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
+    is_authenticated: Optional[bool] = None
 
     @model_validator(mode='after')
     def check_at_least_one_field(self):
@@ -67,6 +71,7 @@ class Employee(EmployeeBase):
     id: uuid.UUID
     magic_link_token: Optional[str] = None
     magic_link_expires_at: Optional[datetime.datetime] = None
+    is_authenticated: bool
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
@@ -79,6 +84,7 @@ class MessageLogBase(BaseModel):
     """ Pydantic model for MessageLog. """
 
     employee_id: Optional[uuid.UUID] = None
+    phone_number: str
     direction: MessageDirection
     raw_message_content: str
     status: MessageStatus
@@ -92,6 +98,19 @@ class MessageLogCreate(MessageLogBase):
     """
 
     pass
+
+
+class MessageLogUpdate(BaseModel):
+    """ Pydantic model for updating a message log.
+        All fields are optional because you don't want
+        to update everything at the same time.
+        """
+
+    system_response_content: Optional[str] = None
+    ai_interpreted_command: Optional[Any] = None
+    direction: Optional[MessageDirection] = None
+    error_message: Optional[str] = None
+    status: Optional[MessageStatus] = None
 
 
 class MessageLog(MessageLogBase):

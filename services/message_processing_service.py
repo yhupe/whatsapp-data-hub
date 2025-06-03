@@ -29,8 +29,8 @@ class MessageProcessingService:
     async def process_inbound_message(
         self,
         employee_id: Optional[UUID],
-        whatsapp_customer_phone_number: str,
-        raw_message_content: str
+        raw_message_content: str,
+        phone_number: Optional[str]
     ) -> MessageLog:
         """
         Processes an inbound message.
@@ -40,11 +40,12 @@ class MessageProcessingService:
         # Saving message to database
         message_log_data = MessageLogCreate(
             employee_id=employee_id,
-            whatsapp_customer_phone_number=whatsapp_customer_phone_number,
             direction=models.MessageDirection.inbound,
             raw_message_content=raw_message_content,
-            status=models.MessageStatus.received
+            status=models.MessageStatus.received,
+            phone_number=phone_number
         )
+
         db_message_log = self.message_log_service.create_message_log(message_log_data=message_log_data)
 
         print(f"Inbound message logged (ID: {db_message_log.id}): '{raw_message_content}'")

@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 from database.database import get_session_local
@@ -21,95 +21,193 @@ if not TELEGRAM_BOT_TOKEN:
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Sends a message when the command /start is issued."""
+    """
+    Sends a message when the command /start is issued.
+    """
+
     user = update.effective_user
+
+    keyboard = [[KeyboardButton("Share my telephone number", request_contact=True)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+
     await update.message.reply_html(
-        f"Hi {user.mention_html()}! I am your chat telegram_bot to interact with your database.\n How can I help you?",
+        f"Hi {user.mention_html()}! I am your database bot.\n"
+        f"Please share your phone number so I can identify you!",
+        reply_markup=reply_markup
     )
 
 
-async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Echo the user message."""
-    # Dies ist ein Platzhalter. Hier würdest du die Nachricht verarbeiten
-    # und z.B. an deine FastAPI-Anwendung oder KI weiterleiten.
-    await update.message.reply_text(f"Du hast gesagt: '{update.message.text}'")
-
-
-## NEW
-
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Verarbeitet eingehende Textnachrichten, speichert sie und antwortet."""
+    """
+    Processes inbound messages and answers the chat automatically.
+    """
 
     user_message_text = update.message.text
-    telegram_user_id = update.effective_user.id
+    telegram_user_telegram_id = update.effective_user.id
 
-    # Hier solltest du die tatsächliche Employee-UUID des Mitarbeiters hinterlegen,
-    # der diesen Bot nutzt, oder eine Logik entwickeln, die den Employee ermittelt.
-    # Fürs Erste nehmen wir eine Dummy-UUID oder None.
-    employee_uuid = None  # Oder UUID("DEINE_FESTE_EMPLOYEE_UUID_HIER")
+    employee_uuid = None
+
+    user_identifier_for_log = f"telegram:{telegram_user_telegram_id}"
 
     session_local_instance = get_session_local()
-    db = session_local_instance()  # Manuelle Datenbank-Session im Bot-Kontext
+    db = session_local_instance()
 
     try:
-        # Hier instanziieren wir die Services direkt, da wir keine FastAPI-Depends haben
-        # im Bot-Kontext. Für komplexere Bots könnte man hier auch eine Dependency Injection
-        # Bibliothek wie 'fastapi-utils' oder 'simple-di' verwenden, aber manuell ist ok für jetzt.
-
-        # Wichtig: Die Services benötigen die Session 'db'
         employee_service_instance = EmployeeService(db=db)
+
         message_log_service_instance = MessageLogService(db=db)
 
-        # NEU: MessageProcessingService instanziieren
+        # new instance of MessageProcessingService
         message_processing_service_instance = MessageProcessingService(
             db=db,
             message_log_service=message_log_service_instance,
             employee_service=employee_service_instance
         )
 
-        # Verwende den neuen MessageProcessingService
+        # Retrieve the phone number from employee based on telegram ID
+        employee_instance = employee_service_instance.get_employee_by_telegram_id(telegram_user_telegram_id)
+
+        if employee_instance:
+            employee_uuid = employee_instance.id  # actual employee id of the user
+            print(
+                f"Employee {employee_instance.name} (ID: {employee_instance.id}) found for Telegram ID {telegram_user_telegram_id}.")
+
+            if employee_instance.phone_number:
+
+                user_identifier_for_log = employee_instance.phone_number
+                print(f"phone number for message log: {user_identifier_for_log}")
+            else:
+
+                print(f"Employee found, but no phone number stored. Using Telegram ID as fallback for log.")
+        else:
+            # In case no number was shared
+            print(
+                f"No Employee found for Telegram ID {telegram_user_telegram_id}. Using Telegram ID as fallback for log.")
+
+        # Service 'MessageProcessingService' calls other service from 'MessageLogService'
         db_message_log = await message_processing_service_instance.process_inbound_message(
             employee_id=employee_uuid,
-            whatsapp_customer_phone_number=f"telegram:{telegram_user_id}",
-            # Identifiziert den Telegram-Nutzer als "Kunden"
+            phone_number=user_identifier_for_log,
             raw_message_content=user_message_text
         )
 
-        # Die Antwort vom System (simulierte KI)
+        # system answer or standard answer
         response_text = db_message_log.system_response_content or "Message processed."
         await update.message.reply_text(response_text)
 
     except Exception as e:
         print(f"Error processing message: {e}")
-        await update.message.reply_text(f"There's an internal error while processing your message.")
+        await update.message.reply_text(f"There's an internal error while processing your message. [handle_message]")
+    finally:
+        db.close()
+
+async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Processes shared contact data and shows phone number.
+    """
+
+    user = update.effective_user
+
+    if not update.message.contact:
+        await update.message.reply_text("No contact details shared. Please click the button to share your phone number.")
+        return
+
+    # Telegram gives the phone number without '+', so I need to add it
+    phone_number = update.message.contact.phone_number
+    if not phone_number.startswith('+'):
+        phone_number = '+' + phone_number
+
+    telegram_user_id = user.id
+
+    session_local_instance = get_session_local()
+    db = session_local_instance()
+
+    employee = None
+    try:
+        employee_service_instance = EmployeeService(db=db)
+
+        # Try to find employee by telegram user id
+        employee = employee_service_instance.get_employee_by_telegram_id(telegram_user_id)
+
+        # if not found, try to find by phone number
+        if not employee:
+            employee = employee_service_instance.get_employee_by_phone_number(phone_number)
+
+            if employee:
+                # If employee found by phone number, telegram ID is being updated in db
+                print(
+                    f"Employee {employee.name} found by phone number. Updating with telegram ID {telegram_user_id}.")
+                # updating the telegram ID
+                employee = employee_service_instance.update_employee_telegram_details(
+                    employee_id=employee.id,
+                    telegram_id=telegram_user_id,
+                )
+
+                if not employee:
+                    await update.message.reply_text(
+                        f"There was an error while updating the employee account {employee.name}. Please try again.")
+                    return
+
+        # Either a found/updated employee or still None
+        if employee:
+            print(
+                f"Employee {employee.name} (ID: {employee.id}, Telegram ID: {employee.telegram_id}) found/ linked.")
+
+            # Checking the authentication status
+            if employee.is_authenticated:
+                response_text = (
+                    f"Welcome back, {employee.name}! You are already authenticated "
+                    f"and linked with your number {employee.phone_number}.\n"
+                    f"You can fully use the chat bot! "
+                )
+            else:
+                response_text = (
+                    f"Thanks, {employee.name}! Your phone number ({employee.phone_number}) "
+                    f"is collected now, but your account is not authenticated, yet.\n"
+                    f"Please authenticate via the magic link process. We'll send you an email to your "
+                    f"registered email address ({employee.email})."
+                    # Placeholder for magic link authentication
+                )
+        else:
+            # Not found by telegram ID or phone number
+            response_text = (
+                f"Hello! Your phone number ({phone_number}) and telegram ID ({telegram_user_id}) "
+                f"are not known in the system. Please create a new account via the "
+                f"respective FastAPI-Endpoint.\n"
+                f"After you did this, come back here, share your number again and we can continue your authentication."
+                f"\n Follow the link to CREATE a new EMPLOYEE: http://127.0.0.1:8000/docs"
+            )
+
+        await update.message.reply_text(response_text)
+
+    except Exception as e:
+        print(f"ERROR: Error in handle_contact: {e}")
+        await update.message.reply_text(f"There has an internal error occurred while processing your data. [handle_contact]")
     finally:
         db.close()
 
 
-## NEW
-
-
 def run_telegram_bot():
     """Starts the Telegram telegram_bot."""
+
     print("Starting Telegram telegram_bot...")
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # --- Registriere Handler ---
+    #  Initializes the start_command when the bot is started
     application.add_handler(CommandHandler("start", start_command))
 
-    # Reagiert auf alle Textnachrichten, die keine Befehle sind
-    #application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_message))
+    # Handler reacts to all text messages that are not assigned commands, after start
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Füge einen Fehler-Handler hinzu
-    #application.add_handler(application.error_handler)
+    # New handler for contact messages
+    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
 
-
-    # Starte den Bot
+    # Start the bot
     print("Bot is polling...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
     print("Telegram telegram_bot stopped.")
 
+# To run the file: PYTHONPATH=. python -m telegram_bot.bot
 
 if __name__ == "__main__":
     run_telegram_bot()
