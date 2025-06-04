@@ -77,7 +77,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if employee_instance:
             employee_uuid = employee_instance.id  # actual employee id of the user
             if employee_instance.phone_number:
-                customer_identifier_for_log = employee_instance.phone_number
+                user_identifier_for_log = employee_instance.phone_number
 
             print(
                 f"Employee {employee_instance.name} (ID: {employee_instance.id}, Authenticated: {employee_instance.is_authenticated}) found for Telegram ID {telegram_user_telegram_id}.")
