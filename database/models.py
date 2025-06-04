@@ -118,7 +118,7 @@ class MessageLog(Base):
     direction = Column(Enum(MessageDirection), nullable=False)
     raw_message_content = Column(Text, nullable=False)
     ai_interpreted_command = Column(JSONB)
-    system_response_content = Column(Text)
+    system_response_content = Column(String, nullable=True)
     status = Column(Enum(MessageStatus), nullable=False)
     error_message = Column(Text)
     timestamp = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc), index=True)

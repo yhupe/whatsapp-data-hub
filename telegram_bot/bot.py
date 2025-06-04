@@ -115,6 +115,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     phone_number=user_identifier_for_log,
                     raw_message_content=user_message_text
                 )
+
                 response_text = db_message_log.system_response_content or "Message processed."
 
         else:

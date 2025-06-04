@@ -31,7 +31,9 @@ class MessageLogService:
             direction=message_log_data.direction,
             raw_message_content=message_log_data.raw_message_content,
             status=message_log_data.status,
-            phone_number=message_log_data.phone_number
+            phone_number=message_log_data.phone_number,
+            system_response_content=message_log_data.system_response_content,
+            ai_interpreted_command=message_log_data.ai_interpreted_command
         )
 
         self.db.add(db_message_log)

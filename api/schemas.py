@@ -96,8 +96,8 @@ class MessageLogCreate(MessageLogBase):
     are created by the server automatically
     and are not part of the create request.
     """
-
-    pass
+    system_response_content: Optional[str] = None
+    ai_interpreted_command: Optional[Any] = None
 
 
 class MessageLogUpdate(BaseModel):

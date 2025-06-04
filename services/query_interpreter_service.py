@@ -76,11 +76,11 @@ class QueryInterpreterService:
                 
         """
 
-        self.system_prompt = f"""
+        self.system_prompt = """
                 You are an AI assistant that translates natural language queries into structured JSON queries for a database.
                 Your task is to understand the user's intent and create a JSON object containing the necessary information to query the database.
 
-                {self.db_schema}
+                {db_schema_placeholder}
 
                 The JSON object MUST have the following format:
                 {{
@@ -98,18 +98,19 @@ class QueryInterpreterService:
                 - ALWAYS select one of the three tables: employees, products, partners.
                 - If specific columns are requested (e.g., "email", "weight"), include them in 'columns'. If no specific column is mentioned and the request is for general information, use ['*'].
                 - ALWAYS use 'filters' when conditions are mentioned (e.g., name, ID). Use the EXACT column names from the schema (e.g., 'first_name', 'last_name', 'name', 'sku', 'phone_number').
-                - Combine first and last names into 'name' for the 'employees' table when filtering (as per your schema). If the user provides "Max Mustermann", use {"name": "Max Mustermann"}.
+                - Combine first and last names into 'name' for the 'employees' table when filtering (as per your schema). If the user provides "Max Mustermann", use {{"name": "Max Mustermann"}}.
                 - If a query is unclear or cannot be applied to the database, set 'error' with an appropriate message.
                 - ONLY generate the JSON object, no additional text or explanations BEFORE or AFTER the JSON.
                 - All values in 'filters' must be strings.
-                """
+                """.format(db_schema_placeholder=self.db_schema)
 
     async def interpret_query(self, user_query: str) -> Dict[str, Any]:
         """
         Sends the user query to the LLM and interprets the JSON response.
         """
         try:
-            print(f"Send query to OpenAI: '{user_query}' with model '{self.model_name}'")
+            escaped_user_query = user_query.replace('{', '{{').replace('}', '}}')
+            print(f"Send query to OpenAI: '{escaped_user_query}' with model '{self.model_name}'")
 
             chat_completion = self.client.chat.completions.create(
                 model=self.model_name,
