@@ -10,14 +10,21 @@ from services.message_processing_service import MessageProcessingService
 from services.message_log_service import MessageLogService
 from services.employee_service import EmployeeService
 
+# Import of utils
+from utils.jwt_utils import create_magic_link_token
+
 # load environmental variables
 load_dotenv()
 
-# Fetch telegram telegram_bot api token
+# Load telegram_bot api token
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
 if not TELEGRAM_BOT_TOKEN:
     raise Exception("Environment variable 'TELEGRAM_BOT_TOKEN' not set.")
+
+# Load FastAPI base URL
+FASTAPI_BASE_URL = os.getenv("FASTAPI_BASE_URL")
+if not FASTAPI_BASE_URL:
+    raise ValueError("FASTAPI_BASE_URL environment variable not set. Please add it to your .env file.")
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,7 +53,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_user_telegram_id = update.effective_user.id
 
     employee_uuid = None
-
     user_identifier_for_log = f"telegram:{telegram_user_telegram_id}"
 
     session_local_instance = get_session_local()
@@ -54,7 +60,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         employee_service_instance = EmployeeService(db=db)
-
         message_log_service_instance = MessageLogService(db=db)
 
         # new instance of MessageProcessingService
@@ -67,39 +72,72 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Retrieve the phone number from employee based on telegram ID
         employee_instance = employee_service_instance.get_employee_by_telegram_id(telegram_user_telegram_id)
 
+        response_text = ""
+
         if employee_instance:
             employee_uuid = employee_instance.id  # actual employee id of the user
-            print(
-                f"Employee {employee_instance.name} (ID: {employee_instance.id}) found for Telegram ID {telegram_user_telegram_id}.")
-
             if employee_instance.phone_number:
+                customer_identifier_for_log = employee_instance.phone_number
 
-                user_identifier_for_log = employee_instance.phone_number
-                print(f"phone number for message log: {user_identifier_for_log}")
-            else:
-
-                print(f"Employee found, but no phone number stored. Using Telegram ID as fallback for log.")
-        else:
-            # In case no number was shared
             print(
-                f"No Employee found for Telegram ID {telegram_user_telegram_id}. Using Telegram ID as fallback for log.")
+                f"Employee {employee_instance.name} (ID: {employee_instance.id}, Authenticated: {employee_instance.is_authenticated}) found for Telegram ID {telegram_user_telegram_id}.")
 
-        # Service 'MessageProcessingService' calls other service from 'MessageLogService'
-        db_message_log = await message_processing_service_instance.process_inbound_message(
-            employee_id=employee_uuid,
-            phone_number=user_identifier_for_log,
-            raw_message_content=user_message_text
-        )
 
-        # system answer or standard answer
-        response_text = db_message_log.system_response_content or "Message processed."
-        await update.message.reply_text(response_text)
+            # authentication check
+            if not employee_instance.is_authenticated:
+                # Employee is not authenticated:
+                print(f"Employee {employee_instance.name} is not authenticated. Generating magic link.")
+
+                # create magic link
+                token = create_magic_link_token(
+                    employee_id=employee_instance.id,
+                    email=employee_instance.email
+                )
+
+                # refactor the magic link url
+                magic_link = f"{FASTAPI_BASE_URL}/auth/verify?token={token}"
+
+                response_text = (
+                    f"Hello {employee_instance.name}, your account is not authenticated, yet."
+                    f"Please click the link to verify your identity:\n"
+                    f"\n{magic_link}\n\n"
+                    f"After that I can process your messages."
+                )
+
+                await update.message.reply_text(response_text)
+                return
+
+            else:
+                print(f"Employee {employee_instance.name} is authenticated. Processing message normally.")
+
+                db_message_log = await message_processing_service_instance.process_inbound_message(
+                    employee_id=employee_uuid,
+                    phone_number=user_identifier_for_log,
+                    raw_message_content=user_message_text
+                )
+                response_text = db_message_log.system_response_content or "Message processed."
+
+        else:
+        # Employee not found: request to share the own contact
+            print(f"No employee found for Telegram ID {telegram_user_telegram_id}. Requesting phone number share.")
+            response_text = (
+                "Hello! Your telegram ID is not known in the system.\n"
+                "Please share your number by clicking the 'Share contact details' button "
+                "so that I can authenticate and identify you."
+            )
+            await update.message.reply_text(response_text)
+            return
+
+        if response_text:  # Only if response_text is not empty
+            await update.message.reply_text(response_text)
 
     except Exception as e:
         print(f"Error processing message: {e}")
-        await update.message.reply_text(f"There's an internal error while processing your message. [handle_message]")
+
+        await update.message.reply_text(f"An internal error occurred while processing your message. [handle_message]")
     finally:
         db.close()
+
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -161,13 +199,23 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"You can fully use the chat bot! "
                 )
             else:
-                response_text = (
-                    f"Thanks, {employee.name}! Your phone number ({employee.phone_number}) "
-                    f"is collected now, but your account is not authenticated, yet.\n"
-                    f"Please authenticate via the magic link process. We'll send you an email to your "
-                    f"registered email address ({employee.email})."
-                    # Placeholder for magic link authentication
+                # Magic link
+                print(
+                    f"Employee {employee.name} is not authenticated after contact share. Generating magic link.")
+                token = create_magic_link_token(
+                    employee_id=employee.id,
+                    email=employee.email
                 )
+                magic_link = f"{FASTAPI_BASE_URL}/auth/verify?token={token}"
+
+                response_text = (
+                    f"Thank you, {employee.name}! Your phone number ({employee.phone_number}) "
+                    f"has been collected, but you are not authenticated, yet.\n"
+                    f"Please click the link below to confirm your identity:\n"
+                    f"\n{magic_link}\n\n"
+                    f"After that I can process your messages."
+                )
+
         else:
             # Not found by telegram ID or phone number
             response_text = (
