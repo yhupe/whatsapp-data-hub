@@ -11,7 +11,7 @@ def test_create_message_log_success(client: TestClient, db_session_for_test: Ses
 
     test_employee_1 = {
         "name": "Test User 1",
-        "whatsapp_phone_number": "+491111111111",
+        "phone_number": "+491111111111",
         "email": "test_1@example.com",
         "role": "general_user"
     }
@@ -26,7 +26,8 @@ def test_create_message_log_success(client: TestClient, db_session_for_test: Ses
         "employee_id" : f"{response_employee_data['id']}",
         "direction" : "inbound",
         "raw_message_content" : "Test Message to check the message logs!",
-        "status" : "received"
+        "status" : "received",
+        "phone_number": test_employee_1["phone_number"]
     }
 
     # Sends post request to endpoint
@@ -45,6 +46,7 @@ def test_create_message_log_success(client: TestClient, db_session_for_test: Ses
     assert response_data_1["direction"] == test_data_1["direction"]
     assert response_data_1["raw_message_content"] == test_data_1["raw_message_content"]
     assert response_data_1["status"] == test_data_1["status"]
+    assert response_data_1["phone_number"] == test_data_1["phone_number"]
     assert "timestamp" in response_data_1
 
     # Check that the employee is in the Employee database
@@ -80,7 +82,7 @@ def test_get_latest_message_log(client: TestClient, db_session_for_test: Session
 
     test_employee_1 = {
         "name": "Test User 1",
-        "whatsapp_phone_number": "+491111111111",
+        "phone_number": "+491111111111",
         "email": "test_1@example.com",
         "role": "general_user"
     }
@@ -96,21 +98,24 @@ def test_get_latest_message_log(client: TestClient, db_session_for_test: Session
         "employee_id" : f"{response_employee_1_data['id']}",
         "direction" : "inbound",
         "raw_message_content" : "Test Message from Employee Nr. 1! should not be taken by the end point.",
-        "status" : "received"
+        "status" : "received",
+        "phone_number": test_employee_1["phone_number"]
     }
 
     test_data_2 = {
         "employee_id": f"{response_employee_1_data['id']}",
         "direction": "inbound",
         "raw_message_content": "Test Message from Employee Nr. 2! should not be taken by the end point.",
-        "status": "received"
+        "status": "received",
+        "phone_number": test_employee_1["phone_number"]
     }
 
     test_data_3 = {
         "employee_id": f"{response_employee_1_data['id']}",
         "direction": "inbound",
         "raw_message_content": "Test Message from Employee Nr. 3! this one should be taken by the endpoint.",
-        "status": "received"
+        "status": "received",
+        "phone_number": test_employee_1["phone_number"]
     }
 
     response_test_data_1 = client.post("/message_log/", json=test_data_1)

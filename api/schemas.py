@@ -17,7 +17,7 @@ class EmployeeBase(BaseModel):
     """
 
     name: str = Field(min_length=1, max_length=255)
-    phone_number: Optional[str] = Field(None, pattern=r"^\+\d{10,15}$")
+    phone_number: str = Field(pattern=r"^\+\d{10,15}$")
     telegram_id : Optional[int] = None
     email: EmailStr
     role: UserRole
@@ -58,7 +58,7 @@ class EmployeeUpdate(EmployeeBase):
         # check that at least one field is not 'None'
         if not any(self.model_dump(exclude_none=True).values()):
             raise ValueError(
-                "At least one field (name, whatsapp_phone_number, email, role) must be provided for update.")
+                "At least one field (name, phone_number, email, role) must be provided for update.")
         return self
 
 

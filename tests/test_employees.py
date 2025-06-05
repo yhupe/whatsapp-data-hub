@@ -11,7 +11,7 @@ def test_create_employee_success(client: TestClient, db_session_for_test: Sessio
 
     employee_data = {
         "name": "Test Employee",
-        "whatsapp_phone_number": "+12345678901",
+        "phone_number": "+12345678901",
         "email": "test.employee@example.com",
         "role": "admin"
     }
@@ -29,7 +29,7 @@ def test_create_employee_success(client: TestClient, db_session_for_test: Sessio
     assert isinstance(uuid.UUID(response_data["id"]), uuid.UUID)
 
     assert response_data["name"] == employee_data["name"]
-    assert response_data["whatsapp_phone_number"] == employee_data["whatsapp_phone_number"]
+    assert response_data["phone_number"] == employee_data["phone_number"]
     assert response_data["email"] == employee_data["email"]
     assert response_data["role"] == employee_data["role"]
     assert "created_at" in response_data
@@ -51,7 +51,7 @@ def test_create_employee_success(client: TestClient, db_session_for_test: Sessio
     assert db_employee.id == employee_id_from_response
     assert db_employee.name == employee_data["name"]
     assert db_employee.email == employee_data["email"]
-    assert db_employee.whatsapp_phone_number == employee_data["whatsapp_phone_number"]
+    assert db_employee.phone_number == employee_data["phone_number"]
     assert db_employee.role.value == employee_data["role"]
 
 
@@ -61,7 +61,7 @@ def test_create_employee_duplicate_email_or_phone(client: TestClient, db_session
     # First employee to be created successful
     employee_data_1 = {
         "name": "Duplicate Test User 1",
-        "whatsapp_phone_number": "+491111111111",
+        "phone_number": "+491111111111",
         "email": "duplicate.test1@example.com",
         "role": "admin"
     }
@@ -73,7 +73,7 @@ def test_create_employee_duplicate_email_or_phone(client: TestClient, db_session
     # Try to create another employee with same e-mail, should fail
     employee_data_2 = {
         "name": "Duplicate Test User 2",
-        "whatsapp_phone_number": "+492222222222",
+        "phone_number": "+492222222222",
         "email": "duplicate.test1@example.com", # same e-mail
         "role": "general_user"
     }
@@ -86,7 +86,7 @@ def test_create_employee_duplicate_email_or_phone(client: TestClient, db_session
     # Try to create another employee with same phone number, should fail
     employee_data_3 = {
         "name": "Duplicate Test User 3",
-        "whatsapp_phone_number": "+491111111111", # same phone number
+        "phone_number": "+491111111111", # same phone number
         "email": "duplicate.test3@example.com",
         "role": "general_user"
     }
@@ -105,7 +105,7 @@ def test_create_employee_invalid_data(client: TestClient):
     """
     invalid_employee_data = {
         "name": "Invalid User",
-        # "whatsapp_phone_number" is missing
+        # "phone_number" is missing
         "email": "invalid.user@example.com",
         "role": "general_user"
     }
@@ -115,7 +115,7 @@ def test_create_employee_invalid_data(client: TestClient):
     # Expecting HTTP 422 Unprocessable Entity for pydantic validation error
     assert response.status_code == 422, f"Expected status 422, got {response.status_code}. Response: {response.json()}"
     assert "detail" in response.json()
-    assert any("whatsapp_phone_number" in error["loc"] for error in response.json()["detail"])
+    assert any("phone_number" in error["loc"] for error in response.json()["detail"])
 
 
 def test_get_employees_empty_db(client: TestClient):
@@ -137,19 +137,19 @@ def test_get_all_employees(client: TestClient):
     # Create some employees
     employee_data_1 = {
         "name": "Alice Test",
-        "whatsapp_phone_number": "+4917612345678",
+        "phone_number": "+4917612345678",
         "email": "alice.test@example.com",
         "role": "admin"
     }
     employee_data_2 = {
         "name": "Bob Test",
-        "whatsapp_phone_number": "+4917687654321",
+        "phone_number": "+4917687654321",
         "email": "bob.test@example.com",
         "role": "admin"
     }
     employee_data_3 = {
         "name": "Charlie Test",
-        "whatsapp_phone_number": "+4917611223344",
+        "phone_number": "+4917611223344",
         "email": "charlie.test@example.com",
         "role": "general_user"
     }
@@ -196,14 +196,14 @@ def test_search_employee_by_full_name(client: TestClient):
     # Create employee to search for
     employee_data_to_find = {
         "name": "Diana Search",
-        "whatsapp_phone_number": "+4917699887766",
+        "phone_number": "+4917699887766",
         "email": "diana.search@example.com",
         "role": "admin"
     }
     # Create employee that should not be found
     another_employee_data = {
         "name": "Eve Other",
-        "whatsapp_phone_number": "+4917611335577",
+        "phone_number": "+4917611335577",
         "email": "eve.other@example.com",
         "role": "admin"
     }
@@ -239,25 +239,25 @@ def test_search_employee_partial_and_case_insensitive(client: TestClient):
     # Creating different employees with different writing of the names
     employee_data_1 = {
         "name": "Frank Tester",
-        "whatsapp_phone_number": "+4915111111111",
+        "phone_number": "+4915111111111",
         "email": "frank.tester@example.com",
         "role": "admin"
     }
     employee_data_2 = {
         "name": "gertrud testmann",
-        "whatsapp_phone_number": "+4915122222222",
+        "phone_number": "+4915122222222",
         "email": "gertrud.t@example.com",
         "role": "admin"
     }
     employee_data_3 = {
         "name": "Heidi Smith",
-        "whatsapp_phone_number": "+4915133333333",
+        "phone_number": "+4915133333333",
         "email": "heidi.s@example.com",
         "role": "general_user"
     }
     employee_data_4 = {
         "name": "IGOR TEST",
-        "whatsapp_phone_number": "+4915144444444",
+        "phone_number": "+4915144444444",
         "email": "igor.t@example.com",
         "role": "general_user"
     }
@@ -291,7 +291,7 @@ def test_update_employee_success(client: TestClient, db_session_for_test: Sessio
 
     employee_data = {
         "name": "Original Name",
-        "whatsapp_phone_number": "+4912345678900",
+        "phone_number": "+4912345678900",
         "email": "original@example.com",
         "role": "general_user"
     }
@@ -318,7 +318,7 @@ def test_update_employee_success(client: TestClient, db_session_for_test: Sessio
     assert updated_employee["email"] == "updated@example.com"
 
     # Check that unchanged fields are really unchanged
-    assert updated_employee["whatsapp_phone_number"] == employee_data["whatsapp_phone_number"]
+    assert updated_employee["phone_number"] == employee_data["phone_number"]
     assert updated_employee["role"] == employee_data["role"]
 
     # Get request to check that the updates are saved to the database correctly
@@ -353,7 +353,7 @@ def test_update_employee_invalid_data(client: TestClient, db_session_for_test: S
     # Create employee
     employee_data = {
         "name": "Valid User",
-        "whatsapp_phone_number": "+4998765432100",
+        "phone_number": "+4998765432100",
         "email": "valid@example.com",
         "role": "general_user"
     }
@@ -379,13 +379,13 @@ def test_update_employee_duplicate_email(client: TestClient, db_session_for_test
 
     employee_1_data = {
         "name": "Employee One",
-        "whatsapp_phone_number": "+4911111111111",
+        "phone_number": "+4911111111111",
         "email": "alpha@example.com",
         "role": "admin"
     }
     employee_2_data = {
         "name": "Employee 3",
-        "whatsapp_phone_number": "+4922222222222",
+        "phone_number": "+4922222222222",
         "email": "beta@example.com",
         "role": "general_user"
     }
@@ -415,13 +415,13 @@ def test_update_employee_duplicate_phone_number(client: TestClient, db_session_f
     # Zwei Mitarbeiter erstellen
     employee_1_data = {
         "name": "Employee Three",
-        "whatsapp_phone_number": "+4933333333333",
+        "phone_number": "+4933333333333",
         "email": "gamma@example.com",
         "role": "admin"
     }
     employee_2_data = {
         "name": "Employee Four",
-        "whatsapp_phone_number": "+4944444444444",
+        "phone_number": "+4944444444444",
         "email": "delta@example.com",
         "role": "general_user"
     }
@@ -436,11 +436,11 @@ def test_update_employee_duplicate_phone_number(client: TestClient, db_session_f
     created_employee_2 = response_2.json()
 
     # Case 2: duplicate phone number
-    duplicate_phone_update = {"whatsapp_phone_number": "+4944444444444"}
+    duplicate_phone_update = {"phone_number": "+4944444444444"}
     response = client.patch(f"/employees/{employee_1_id}", json=duplicate_phone_update)
     assert response.status_code == 400
     assert "duplicate key value violates unique constraint" in response.json()["detail"]
-    assert "ix_employees_whatsapp_phone_number" in response.json()["detail"]
+    assert "ix_employees_phone_number" in response.json()["detail"]
 
 
 def test_update_employee_no_data_provided(client: TestClient, db_session_for_test: Session):
@@ -451,7 +451,7 @@ def test_update_employee_no_data_provided(client: TestClient, db_session_for_tes
 
     employee_data = {
         "name": "Test User",
-        "whatsapp_phone_number": "+4912341234123",
+        "phone_number": "+4912341234123",
         "email": "test@example.com",
         "role": "admin"
     }
@@ -466,7 +466,7 @@ def test_update_employee_no_data_provided(client: TestClient, db_session_for_tes
     assert response.status_code == 422
 
     # Check that a more specific error note is thrown by the pydantic @model_validator
-    assert "At least one field (name, whatsapp_phone_number, email, role) must be provided for update." in response.json()["detail"][0]["msg"]
+    assert "At least one field (name, phone_number, email, role) must be provided for update." in response.json()["detail"][0]["msg"]
 
 
 def test_delete_employee_success(client: TestClient, db_session_for_test: Session):
@@ -476,7 +476,7 @@ def test_delete_employee_success(client: TestClient, db_session_for_test: Sessio
 
     employee_data = {
         "name": "Employee to Delete",
-        "whatsapp_phone_number": "+4998765432100",
+        "phone_number": "+4998765432100",
         "email": "delete_me@example.com",
         "role": "general_user"
     }
