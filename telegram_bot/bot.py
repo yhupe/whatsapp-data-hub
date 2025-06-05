@@ -220,7 +220,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             # Not found by telegram ID or phone number
             response_text = (
-                f"Hello! Your phone number ({phone_number}) and telegram ID ({telegram_user_id}) "
+                f"Hello {user.first_name}! Your phone number ({phone_number}) and telegram ID ({telegram_user_id}) "
                 f"are not known in the system. Please create a new account via the "
                 f"respective FastAPI-Endpoint.\n"
                 f"After you did this, come back here, share your number again and we can continue your authentication."

@@ -66,7 +66,7 @@ def decode_magic_link_token(token: str) -> Optional[dict]:
     """
 
     try:
-        # Den JWT dekodieren (validieren der Signatur und des Ablaufdatums)
+        # Decoding of JWT (validation of signature and expiry date)
         decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return decoded_token
 
