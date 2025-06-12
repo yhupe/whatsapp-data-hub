@@ -17,7 +17,7 @@ from api import schemas
 # Import of database dependency
 from database.database import get_db
 
-# Import of EmployeeService
+# Import of ProductService
 from services.products_service import ProductService, get_product_service
 
 from uuid import UUID
@@ -61,6 +61,28 @@ def create_product(
         )
 
 
+@product_router.get("/all", response_model=List[schemas.Product], status_code=status.HTTP_200_OK)
+def get_all_products(
+    product_service: ProductService = Depends(get_product_service)
+):
+    """ Endpoint to get all products.
+
+    Args:
+        product_service (ProductService): The injected ProductService instance.
+
+    Returns: db_product: The list of all product objects.
+
+    Raises: HTTPException: If the product cannot be found by the passed name (HTTP 404 Not Found)
+
+    """
+
+    db_product = product_service.get_all_products()
+    if not db_product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No products found")
+
+    return db_product
+
+
 @product_router.get("/{product_id}", response_model=schemas.Product, status_code=status.HTTP_200_OK)
 def get_product_by_id(
     product_id: UUID,
@@ -72,7 +94,7 @@ def get_product_by_id(
         product_id (UUID): A unique identifier in UUID format.
         product_service (ProductService): The injected ProductService instance.
 
-    Returns: db_product: The employee object searched for.
+    Returns: db_product: The product object searched for.
 
     Raises: HTTPException: If the product cannot be found by the passed ID (HTTP 404 Not Found)
 
@@ -85,7 +107,7 @@ def get_product_by_id(
     return db_product
 
 
-@product_router.get("/{product_name}", response_model=schemas.Product, status_code=status.HTTP_200_OK)
+@product_router.get("/{product_name}", response_model=List[schemas.Product], status_code=status.HTTP_200_OK)
 def get_product_by_name(
     product_name: str,
     product_service: ProductService = Depends(get_product_service)
@@ -105,28 +127,6 @@ def get_product_by_name(
     db_product = product_service.get_all_products(name_query=product_name)
     if not db_product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-
-    return db_product
-
-
-@product_router.get("/all", response_model=List[schemas.Employee], status_code=status.HTTP_200_OK)
-def get_all_products(
-    product_service: ProductService = Depends(get_product_service)
-):
-    """ Endpoint to get all products.
-
-    Args:
-        product_service (ProductService): The injected ProductService instance.
-
-    Returns: db_product: The list of all product objects.
-
-    Raises: HTTPException: If the product cannot be found by the passed name (HTTP 404 Not Found)
-
-    """
-
-    db_product = product_service.get_all_products
-    if not db_product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No products found")
 
     return db_product
 

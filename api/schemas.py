@@ -178,6 +178,8 @@ class ProductUpdate(BaseModel):
     is_active: Optional[bool] = None
     notes: Optional[str] = None
 
+    model_config = ConfigDict(extra='ignore')
+
     @model_validator(mode='after')
     def check_at_least_one_field(self):
         """ Validation that at least one field is being updated.
@@ -195,6 +197,8 @@ class ProductUpdate(BaseModel):
         return self
 
 
+
+
 class Product(ProductBase):
     """
     Model (inheriting from ProductBase) for the response of the API.
@@ -205,3 +209,6 @@ class Product(ProductBase):
     id : uuid.UUID
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
+    # Config allows Pydantic to load data from SQLAlchemy models
+    model_config = ConfigDict(from_attributes=True)

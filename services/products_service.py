@@ -8,6 +8,7 @@ from api.schemas import ProductCreate, ProductUpdate
 from database.database import get_db
 from fastapi import Depends, HTTPException
 
+
 class ProductService:
     def __init__(self, db: Session):
         """
@@ -53,12 +54,14 @@ class ProductService:
         self.db.refresh(new_product)
         return new_product
 
+
     def get_product_by_id(self, product_id: UUID) -> Optional[models.Product]:
         """
         Retrieves a product by ID.
         """
 
         return self.db.query(models.Product).filter(models.Product.id == product_id).first()
+
 
     def get_all_products(self, name_query: Optional[str] = None) -> List[models.Product]:
         """
