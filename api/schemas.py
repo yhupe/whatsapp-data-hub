@@ -135,17 +135,17 @@ class MessageLog(MessageLogBase):
 class ProductBase(BaseModel):
     """ Pydantic model for Products. """
 
-    name : str = Field(min_length=1, max_length=255)
-    description : Optional[str] = Field(None)
-    length : Optional[Decimal] = Field(None)
-    height : Optional[Decimal] = Field(None)
-    width : Optional[Decimal] = Field(None)
-    weight : Optional[Decimal] = Field(None)
-    image_url : Optional[str] = Field(None)
-    price : Decimal = Field(gt=0)
-    stock_quantity : int = Field(0, ge=0)
-    is_active : bool = Field(True)
-    notes : Optional[str] = Field(None)
+    name : str = Field(min_length=1, max_length=255, examples=["Product A"], description="Mandatory: here goes the product name.")
+    description : Optional[str] = Field(None, examples=["This is a very nice product!"], description="Optional: here goes an text to describe the product.")
+    length : Optional[Decimal] = Field(None, examples=["20.00"], description="Optional: length of the product in cm.")
+    height : Optional[Decimal] = Field(None, examples=["10.00"], description="Optional: height of the product in cm.")
+    width : Optional[Decimal] = Field(None, examples=["5.50"], description="Optional: width of the product in cm.")
+    weight : Optional[Decimal] = Field(None, examples=["2.50"], description="Optional: weight of the product in kg.")
+    image_url : Optional[str] = Field(None, examples=["www.here-goes-the-link.com"], description="Optional: URL to a picture of the product.")
+    price : Decimal = Field(gt=0, examples=["20.00"], description="Mandatory: price of the product in €.")
+    stock_quantity : int = Field(0, ge=0, examples=["20.00"], description="Mandatory: stock quantity of the product.")
+    is_active : bool = Field(True, examples=["true", "false"], description="Mandatory: true if actively selling, false if not actively selling or qty < 1.")
+    notes : Optional[str] = Field(None, examples=["An internal note about the product :)"], description="Optional: here goes an internal note about the product.")
 
 
 class ProductCreate(ProductBase):
@@ -166,17 +166,17 @@ class ProductUpdate(BaseModel):
     to update everything at the same time.
     """
 
-    name : Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    length: Optional[Decimal] = None
-    height: Optional[Decimal] = None
-    width: Optional[Decimal] = None
-    weight: Optional[Decimal] = None
-    image_url: Optional[str] = None
-    price: Optional[Decimal] = Field(None, gt=0)
-    stock_quantity: Optional[int] = Field(None, ge=0)
-    is_active: Optional[bool] = None
-    notes: Optional[str] = None
+    name : Optional[str] = Field("Optional, str, INFO: Only execute the fields you want to update", min_length=1, max_length=255)
+    description: Optional[str] = Field("Optional, str, INFO: and delete the rest before executing.")
+    length: Optional[Decimal] = Field("Optional, decimal, INFO: Only execute fields with updated values!")
+    height: Optional[Decimal] = Field("Optional, decimal")
+    width: Optional[Decimal] = Field("Optional, decimal")
+    weight: Optional[Decimal] = Field("Optional, decimal")
+    image_url: Optional[str] = Field("Optional, str")
+    price: Optional[Decimal] = Field("Optional, decimal, > 0", gt=0)
+    stock_quantity: Optional[int] = Field("Optional, int, >= 0", ge=0)
+    is_active: Optional[bool] = Field("Optional, true or false")
+    notes: Optional[str] = Field("Optional, str")
 
     model_config = ConfigDict(extra='ignore')
 
