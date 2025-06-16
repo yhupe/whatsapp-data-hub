@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional, Any
+import json
 
 from database import models
 from database.database import get_db
@@ -54,15 +55,30 @@ class MessageProcessingService:
         llm_query_intent = await self.query_interpreter.interpret_query(raw_message_content)
 
         # 3. Check if the LLM reported an error
-        if "error" in llm_query_intent:
+        if "error" in llm_query_intent and llm_query_intent["error"]:
             system_response_content = f"Sorry {employee_name_for_response}, I couldn't understand your request: {llm_query_intent['error']}"
         else:
             # 4. Execute database query based on the LLM's intent
             try:
                 db_results = self.db_query_builder.execute_query(llm_query_intent)
 
-                if db_results and "error" in db_results[0]:
+                if db_results and isinstance(db_results, list) and db_results and isinstance(db_results[0], dict) and "error" in db_results[0]:
                     system_response_content = f"Sorry {employee_name_for_response}, an error occurred while querying the database: {db_results[0]['error']}"
+
+                # Special handling for counting requests
+                # Checks whether it was the intent to gett all ID's for counting
+                elif llm_query_intent.get("action") == "get_data" and \
+                     llm_query_intent.get("columns") == ["id"] and \
+                     llm_query_intent.get("filters") == {}:
+                    # counting of actual length of returned results
+                    count = len(db_results)
+                    # Formatting of response
+                    system_response_content = f"There are {count} {llm_query_intent.get('table', 'items').rstrip('s')}s in the database, {employee_name_for_response}."
+
+                # General handling when nothing was found (for all requests)
+                elif not db_results:
+                    system_response_content = f"Sorry {employee_name_for_response}, I couldn't find any information matching your request."
+
                 elif db_results:
                     formatted_results = []
                     for item in db_results:
@@ -71,9 +87,6 @@ class MessageProcessingService:
 
                     system_response_content = f"Here is the information you requested, {employee_name_for_response}:\n" + "\n".join(
                         formatted_results)
-
-                    if not formatted_results:
-                        system_response_content = f"Sorry {employee_name_for_response}, I couldn't find any information matching your request."
 
                 else:
                     system_response_content = f"Sorry {employee_name_for_response}, I couldn't find any information matching your request."

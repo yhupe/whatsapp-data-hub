@@ -102,6 +102,21 @@ class QueryInterpreterService:
                 - If a query is unclear or cannot be applied to the database, set 'error' with an appropriate message.
                 - ONLY generate the JSON object, no additional text or explanations BEFORE or AFTER the JSON.
                 - All values in 'filters' must be strings.
+                
+                Example requests and expected JSON:
+                Request: 'show me the  e mail of Max Mustermann.'
+                JSON: {{"table": "employees", "action": "get_data", "columns": ["email"], "filters": {{"name": "Max Mustermann"}}}}
+
+                User: 'How many products are in stock?'
+                JSON: {{"table": "products", "action": "get_data", "columns": ["id"], "filters": {{}}}}
+                # VERY IMPORTANT: For count queries like "How many X are there?", set "columns" to ["id"] and "filters" to {{}}, and DO NOT set the "error" field.
+                
+                Request: 'show me all products.'
+                JSON: {{"table": "products", "action": "get_data", "columns": ["*"], "filters": {{}}, "limit": "50"}}
+                
+                Request: 'What is the price of Product A?'
+                JSON: {{"table": "products", "action": "get_data", "columns": ["price"], "filters": {{"name": "Product A"}}, "limit": "1"}}
+                
                 """.format(db_schema_placeholder=self.db_schema)
 
     async def interpret_query(self, user_query: str) -> Dict[str, Any]:

@@ -72,20 +72,32 @@ class DatabaseQueryBuilder:
         action = query_intent.get("action")
         columns = query_intent.get("columns", ["*"])  # Default to all columns
         filters = query_intent.get("filters", {})
-        raw_limit = query_intent.get("limit", 1)  # Default limit to 1
+        raw_limit = query_intent.get("limit", None)  # Default limit to None
         limit: Optional[int] = None
+
+        # Define 'model' here so it's accessible in this method's scope
+        model = self.model_map.get(table_name)
+        if not model:
+            # This should ideally be caught by _build_query too, but good to have a safeguard
+            raise ValueError(f"Unknown table name received from intent: {table_name}")
+
 
         if raw_limit is not None:
             try:
-                limit = int(raw_limit)
-                if limit <= 0:
-                    raise ValueError("Limit must be a positive integer.")
+                # Check to handle the string "null" correctly
+                if isinstance(raw_limit, str) and raw_limit.lower() == 'null':
+                    limit = None  # If LLM sends "null" limit --> no limit
+
+                else:
+                    limit = int(raw_limit)
+                    if limit <= 0:
+                        raise ValueError("Limit must be a positive integer.")
             except ValueError:
                 # Handle the case where limit is not a valid integer string
                 print(f"WARNING: Invalid limit value '{raw_limit}' from LLM. Using default limit of 1.")
-                limit = 1
+                limit = None
         else:
-            limit = 1
+            limit = None
 
 
         if action != "get_data":

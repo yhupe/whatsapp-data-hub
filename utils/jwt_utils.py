@@ -2,7 +2,7 @@ import jwt
 import os
 import datetime
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Dict, Any
 from uuid import UUID
 
 from dotenv import load_dotenv
@@ -18,6 +18,9 @@ JWT_ALGORITHM = "HS256"
 # Check that the
 if not JWT_SECRET_KEY:
     raise ValueError("JWT_SECRET_KEY environment variable not set. Please add it to your .env file.")
+
+# Load access token expiry time from .env
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 
 def create_magic_link_token(employee_id: UUID, email: str, expires_delta: Optional[timedelta] = None) -> str:
@@ -52,31 +55,49 @@ def create_magic_link_token(employee_id: UUID, email: str, expires_delta: Option
     return encoded_jwt
 
 
-def decode_magic_link_token(token: str) -> Optional[dict]:
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """
-    Decodes and validates the Magic Link JWT.
-    Returns the payload as dict, if tokes is valid.
-    Returns None in case the token has expired, is invalid or does not work for any other reason.
+    Generates a JWT for general access.
+    The token contains arbitrary data (payload) and an expiry date.
+
+    Args:
+        data (Dict[str, Any]): The payload data to be encoded into the JWT.
+        expires_delta (Optional[timedelta]): Optional: The timedelta after which the token expires.
+    """
+
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
+    else:
+        expire = datetime.datetime.now(datetime.timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    return encoded_jwt
+
+
+def decode_access_token(token: str) -> Optional[dict]:
+    """
+    Decodes and validates a JWT (general purpose).
+    Returns the payload as dict if the token is valid.
+    Returns None in case the token has expired, is invalid, or does not work for any other reason.
 
     Args:
         token (str): The JWT string to be decoded.
 
     Returns:
-        decoded_token (Optional[dict]): The decoded payload as dict or None.
+        Optional[dict]: The decoded payload as a dictionary if the token is valid,
+                        otherwise None if the token is expired, invalid, or cannot be decoded.
     """
 
     try:
-        # Decoding of JWT (validation of signature and expiry date)
         decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         return decoded_token
 
     except jwt.ExpiredSignatureError:
-        # Error when token has expired
-        print("Magic link token has expired.")
+        print("Access token has expired.")
         return None
 
     except jwt.InvalidTokenError as e:
-        # Error when token is invalid
-        print(f"Invalid magic link token: {e}")
+        print(f"Invalid access token: {e}")
         return None
 

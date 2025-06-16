@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from uuid import UUID
 
 # Import of JWT decoding method
-from utils.jwt_utils import decode_magic_link_token
+from utils.jwt_utils import decode_access_token
 
 
 templates = Jinja2Templates(directory="templates")
@@ -35,7 +35,7 @@ async def verify_magic_link(request: Request, token: str, db: Session = Depends(
     """
 
     # Decoding and validating token
-    decoded_token = decode_magic_link_token(token)
+    decoded_token = decode_access_token(token)
     employee_service = EmployeeService(db)
 
     try:
