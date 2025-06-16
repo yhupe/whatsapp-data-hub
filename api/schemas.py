@@ -143,7 +143,7 @@ class ProductBase(BaseModel):
     weight : Optional[Decimal] = Field(None, examples=["2.50"], description="Optional: weight of the product in kg.")
     image_url : Optional[str] = Field(None, examples=["www.here-goes-the-link.com"], description="Optional: URL to a picture of the product.")
     price : Decimal = Field(gt=0, examples=["20.00"], description="Mandatory: price of the product in €.")
-    stock_quantity : int = Field(0, ge=0, examples=["20.00"], description="Mandatory: stock quantity of the product.")
+    stock_quantity : int = Field(ge=0, examples=["20.00"], description="Mandatory: stock quantity of the product.")
     is_active : bool = Field(True, examples=["true", "false"], description="Mandatory: true if actively selling, false if not actively selling or qty < 1.")
     notes : Optional[str] = Field(None, examples=["An internal note about the product :)"], description="Optional: here goes an internal note about the product.")
 
@@ -191,12 +191,10 @@ class ProductUpdate(BaseModel):
         """
 
         # check that at least one field is not 'None'
-        if not any(self.model_dump(exclude_none=True).values()):
+        if not self.model_fields_set:
             raise ValueError(
                 "At least one field (name, description, size, price etc.) must be provided for update.")
         return self
-
-
 
 
 class Product(ProductBase):

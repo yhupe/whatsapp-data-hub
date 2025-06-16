@@ -1,5 +1,5 @@
 # Import of necessary parts of FastAPI
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 
 # Import of or_ module as a filtering condition to avoid using '|'
 from sqlalchemy import or_
@@ -83,6 +83,30 @@ def get_all_products(
     return db_product
 
 
+@product_router.get("/search", response_model=List[schemas.Product], status_code=status.HTTP_200_OK)
+def search_products_by_name(
+    name_query: str = Query(..., min_length=1, description="Search term for product name (case-insensitive, partial match)"),
+    product_service: ProductService = Depends(get_product_service)
+):
+    """ Endpoint to search products by name using a query parameter.
+
+    Args:
+        name_query (str): The search term for the product name.
+        product_service (ProductService): The injected ProductService instance.
+
+    Returns: db_product: A list of product objects matching the search term.
+
+    Raises: HTTPException: If no products are found for the given search term (HTTP 404 Not Found)
+
+    """
+
+    db_products = product_service.get_all_products(name_query=name_query)
+    if not db_products:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No products found with this name")
+
+    return db_products
+
+
 @product_router.get("/{product_id}", response_model=schemas.Product, status_code=status.HTTP_200_OK)
 def get_product_by_id(
     product_id: UUID,
@@ -101,30 +125,6 @@ def get_product_by_id(
     """
 
     db_product = product_service.get_product_by_id(product_id=product_id)
-    if not db_product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-
-    return db_product
-
-
-@product_router.get("/{product_name}", response_model=List[schemas.Product], status_code=status.HTTP_200_OK)
-def get_product_by_name(
-    product_name: str,
-    product_service: ProductService = Depends(get_product_service)
-):
-    """ Endpoint to get a product by name.
-
-    Args:
-        product_name (str): A products name in str type.
-        product_service (ProductService): The injected ProductService instance.
-
-    Returns: db_product: The product object searched for.
-
-    Raises: HTTPException: If the product cannot be found by the passed name (HTTP 404 Not Found)
-
-    """
-
-    db_product = product_service.get_all_products(name_query=product_name)
     if not db_product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
@@ -207,4 +207,3 @@ def delete_product_by_id(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(e)
             )
-

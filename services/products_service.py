@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from uuid import UUID
 from typing import List, Optional
+import datetime
 
 from database import models
 from api.schemas import ProductCreate, ProductUpdate
@@ -14,8 +15,23 @@ class ProductService:
         """
         Initializes the ProductService with a db-session.
         """
+
         self.db = db
 
+    def delete_product(self, product_id: UUID) -> bool:
+        """
+        Deletes an employee by ID.
+        Returns True if deleted, False if not found.
+        """
+
+        db_product = self.get_product_by_id(product_id)
+
+        if not db_product:
+            raise ValueError("Product not found")
+
+        self.db.delete(db_product)
+        self.db.commit()
+        return True
 
     def create_product(
         self,
@@ -92,10 +108,24 @@ class ProductService:
         if not db_product:
             raise ValueError("Product not found")
 
+        # Check only if the name is part of update request
+        if product_update_data.name is not None and product_update_data.name != db_product.name:
+            # Exact request for the new name
+            existing_product_with_new_name = self.db.query(models.Product).filter(
+                models.Product.name == product_update_data.name
+            ).first()
+
+            # Check if the new name exists already and its not the product we want to update:
+            if existing_product_with_new_name and existing_product_with_new_name.id != product_id:
+                raise ValueError(f"Product with name '{product_update_data.name}' already exists for another product.")
+
+        # Update of field
         update_data = product_update_data.model_dump(exclude_unset=True)
 
         for key, value in update_data.items():
             setattr(db_product, key, value)
+
+        db_product.updated_at = datetime.datetime.now(datetime.timezone.utc)
 
         try:
             self.db.add(db_product)
@@ -108,21 +138,6 @@ class ProductService:
             error_detail = str(e.orig) if hasattr(e, 'orig') else str(e)
             raise ValueError(f"Database error updating product: {error_detail}")
 
-
-    def delete_product(self, product_id: UUID) -> bool:
-        """
-        Deletes an employee by ID.
-        Returns True if deleted, False if not found.
-        """
-
-        db_product = self.get_product_by_id(product_id)
-
-        if not db_product:
-            raise ValueError("Product not found")
-
-        self.db.delete(db_product)
-        self.db.commit()
-        return True
 
 # Dependency for FastAPI-Router
 # Function is used by FastAPI as dependency to inject a service instance
