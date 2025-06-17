@@ -119,11 +119,24 @@ class ProductService:
             if existing_product_with_new_name and existing_product_with_new_name.id != product_id:
                 raise ValueError(f"Product with name '{product_update_data.name}' already exists for another product.")
 
-        # Update of field
+        # Update data
         update_data = product_update_data.model_dump(exclude_unset=True)
 
+        # Update all fields with new values in update_data
         for key, value in update_data.items():
             setattr(db_product, key, value)
+
+        # if the stock_quantity was part of the update data and is now 0 --> is_active status becomes 'false'
+        if db_product.stock_quantity == 0:
+            db_product.is_active = False
+            print(
+                f"Product '{db_product.name}' automatically deactivated: stock_quantity has reached 0")
+
+        elif db_product.stock_quantity > 0:
+            if not db_product.is_active:
+                db_product.is_active = True
+                print(
+                    f"Product '{db_product.name}' automatically activated: stock_quantity > 0")
 
         db_product.updated_at = datetime.datetime.now(datetime.timezone.utc)
 
