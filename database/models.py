@@ -47,43 +47,20 @@ class Employee(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
+    username = Column(String)
+    hashed_password = Column(String)
     phone_number = Column(String, unique=True, nullable=False, index=True)
     telegram_id = Column(BigInteger, unique=True, index=True, nullable=True)
     email = Column(String, unique=True, nullable=False, index=True)
     role = Column(Enum(UserRole), nullable=False)
-    magic_link_token = Column(String)
-    magic_link_expires_at = Column(DateTime(timezone=True))
     is_authenticated = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc),
                         onupdate=datetime.datetime.now(datetime.timezone.utc))
 
     # Definition of relationship to other models
-    partners = relationship("Partner", back_populates="main_contact_employee")
+    managed_products = relationship("Product", back_populates="product_manager")
     message_logs = relationship("MessageLog", back_populates="employee")
-
-
-class Partner(Base):
-    """ Definition of ORM model class/ table 'Partner' """
-
-    __tablename__ = "partners"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    contact_person = Column(String)
-    email = Column(String)
-    phone_number = Column(String)
-    address_street = Column(String)
-    address_city = Column(String)
-    address_zip_code = Column(String)
-    address_country = Column(String)
-    notes = Column(Text)
-    main_contact_employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
-
-    # Definition of relationship to other models
-    main_contact_employee = relationship("Employee", back_populates="partners")
 
 
 class Product(Base):
@@ -93,6 +70,7 @@ class Product(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
+    product_manager_id = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
     description = Column(Text)
     length = Column(Numeric(10, 2))
     height = Column(Numeric(10, 2))
@@ -106,6 +84,8 @@ class Product(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=datetime.datetime.now(datetime.timezone.utc), onupdate=datetime.datetime.now(datetime.timezone.utc))
 
+    # Definition of relationship to other models
+    product_manager = relationship("Employee", back_populates="managed_products")
 
 class MessageLog(Base):
     """ Definition of ORM model class/ table 'MessageLog' """

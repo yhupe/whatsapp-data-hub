@@ -6,6 +6,7 @@ from enum import Enum as PyEnum
 
 # Import BaseModel and ConfigDict for pydantic v2+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic.v1 import UUID4
 from sqlalchemy import Boolean
 
 # IMport of Enums from SQLAlchemy models
@@ -137,6 +138,7 @@ class ProductBase(BaseModel):
 
     name : str = Field(min_length=1, max_length=255, examples=["Product A"], description="Mandatory: here goes the product name.")
     description : Optional[str] = Field(None, examples=["This is a very nice product!"], description="Optional: here goes an text to describe the product.")
+    product_manager_id: Optional[uuid.UUID] = Field(None, examples=["7ed60d8d-ef12-4cd2-910f-05cd423bf21c"], description="UUID of the employee assigned as product manager.")
     length : Optional[Decimal] = Field(None, examples=["20.00"], description="Optional: length of the product in cm.")
     height : Optional[Decimal] = Field(None, examples=["10.00"], description="Optional: height of the product in cm.")
     width : Optional[Decimal] = Field(None, examples=["5.50"], description="Optional: width of the product in cm.")
@@ -168,7 +170,8 @@ class ProductUpdate(BaseModel):
 
     name : Optional[str] = Field("Optional, str, INFO: Only execute the fields you want to update", min_length=1, max_length=255)
     description: Optional[str] = Field("Optional, str, INFO: and delete the rest before executing.")
-    length: Optional[Decimal] = Field("Optional, decimal, INFO: Only execute fields with updated values!")
+    product_manager_id: Optional[uuid.UUID] = Field("Optional, uuid, INFO: Only execute fields with updated values!")
+    length: Optional[Decimal] = Field("Optional, decimal")
     height: Optional[Decimal] = Field("Optional, decimal")
     width: Optional[Decimal] = Field("Optional, decimal")
     weight: Optional[Decimal] = Field("Optional, decimal")
@@ -205,6 +208,7 @@ class Product(ProductBase):
     """
 
     id : uuid.UUID
+    product_manager: Optional[EmployeeBase] = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
 

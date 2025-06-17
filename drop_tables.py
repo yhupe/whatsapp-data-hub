@@ -8,7 +8,7 @@ from database.database import get_engine, Base
 
 # import of all ORM models -> hint for SQLAlchemy what classes inherit from Base
 # and therefore are tables
-from database.models import Employee, Partner, Product, MessageLog
+from database.models import Employee, Product, MessageLog
 
 engine = get_engine()
 print(f"Connecting to engine at {engine.url}")
