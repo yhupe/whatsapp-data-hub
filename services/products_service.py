@@ -141,17 +141,17 @@ class ProductService:
         if 'product_manager_id' in update_data:
             if update_data['product_manager_id'] is not None:
                 # injected method to get employee by id
-                product_manager_instance = self.employee_service.get_employee_by_id(update_data['product_manager'])
+                product_manager_instance = self.employee_service.get_employee_by_id(update_data['product_manager_id'])
 
                 if not product_manager_instance:
                     raise ValueError(
-                        f"Product manager with ID '{update_data['product_manager']}' not found for update.")
+                        f"Product manager with ID '{update_data['product_manager_id']}' not found for update.")
 
                 db_product.product_manager = product_manager_instance
             # If product manager explicitly is None:
             else:
                 db_product.product_manager_id = None
-            update_data.pop('product_manager')
+            update_data.pop('product_manager_id')
 
         # Update all fields with new values in update_data
         for key, value in update_data.items():

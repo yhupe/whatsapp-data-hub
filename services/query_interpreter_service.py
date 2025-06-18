@@ -96,6 +96,13 @@ class QueryInterpreterService:
                 - If filtering on a column ending with '_id' (e.g., 'product_manager_id'), the value MUST be a UUID. 
                 If the user provides a name (like "Hannes Pickel") for an _id column, set the 'error' field with a 
                 message like "Cannot filter UUID column with a name. Please provide an ID or ask for the manager's name directly.
+                - When filtering by 'name' (e.g., product name, employee name):
+                  - If the user provides a name that is a *close but not exact match* to a known product/employee name (e.g., "quantum cube" for "Quantum Qube", "eco bottle" for "Eco-Friendly Water Bottle"),
+                    the LLM should attempt to normalize the user's input to the most likely **canonical (official) name** in the filter value, using its general knowledge.
+                  - If no canonical name is a close match, use the user's input directly in the filter.
+                  - Ensure correct capitalization and spacing for canonical names.
+                  - Do NOT set an 'error' field if the name is not found; the backend will handle filtering.
+
 
                 Example requests and expected JSON:
                 Request: 'show me the email of Max Mustermann.'
@@ -111,11 +118,29 @@ class QueryInterpreterService:
                 Request: 'What is the price of Product A?'
                 JSON: {{"table": "products", "action": "get_data", "columns": ["price"], "filters": {{"name": "Product A"}}, "limit": "1"}}
 
+                # Examples for cross-table queries (JOINs)
                 Request: 'Who is the product manager for the product Cannabis?'
                 JSON: {{"table": "products", "action": "get_data", "columns": ["name"], "filters": {{"name": "Cannabis"}}, "join_table": "employees", "join_on": "product_manager_id", "join_columns": ["name"], "limit": "1"}}
 
                 Request: 'Give me the email of the product manager for "My Awesome Product".'
                 JSON: {{"table": "products", "action": "get_data", "columns": ["name"], "filters": {{"name": "My Awesome Product"}}, "join_table": "employees", "join_on": "product_manager_id", "join_columns": ["email"], "limit": "1"}}
+
+                # Examples for robust name filtering (more general):
+                Request: 'How many quantum cube are on stock?'
+                JSON: {{"table": "products", "action": "get_data", "columns": ["id"], "filters": {{"name": "Quantum Qube"}}}}
+                # Explanation for LLM: "quantum cube" is a close phonetic/semantic match for "Quantum Qube". Use the precise name.
+
+                Request: 'What is the stock quantity of eco-bottle?'
+                JSON: {{"table": "products", "action": "get_data", "columns": ["stock_quantity"], "filters": {{"name": "Eco-Friendly Water Bottle"}}}}
+                # Explanation for LLM: "eco-bottle" is a common alternative for "Eco-Friendly Water Bottle". Use the precise name.
+
+                Request: 'Tell me about the VR Headset.'
+                JSON: {{"table": "products", "action": "get_data", "columns": ["*"], "filters": {{"name": "VR Headset Pro"}}}}
+                # Explanation for LLM: "VR Headset" is a shortened form of "VR Headset Pro". Use the full, precise name.
+
+                Request: 'Show me the phone number of Hannes.'
+                JSON: {{"table": "employees", "action": "get_data", "columns": ["phone_number"], "filters": {{"name": "Hannes Pickel"}}}}
+                # Explanation for LLM: "Hannes" is a common short form for "Hannes Pickel". Use the full, precise name.
 
                 """.format(db_schema_placeholder=self.db_schema)
 
@@ -123,6 +148,7 @@ class QueryInterpreterService:
         """
         Sends the user query to the LLM and interprets the JSON response.
         """
+
         try:
             escaped_user_query = user_query.replace('{', '{{').replace('}', '}}')
             print(f"Send query to OpenAI: '{escaped_user_query}' with model '{self.model_name}'")
