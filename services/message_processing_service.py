@@ -85,7 +85,7 @@ class MessageProcessingService:
                         item_str = ", ".join(f"{k.replace('_', ' ').title()}: {v}" for k, v in item.items())
                         formatted_results.append(item_str)
 
-                    system_response_content = f"Here is the information you requested, {employee_name_for_response}:\n" + "\n".join(
+                    system_response_content = f"Here is the information you requested, {employee_name_for_response}:\n\n" + "\n\n".join(
                         formatted_results)
 
                 else:

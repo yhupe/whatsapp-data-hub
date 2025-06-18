@@ -60,6 +60,7 @@ def create_product(
 
     **Raises:**\n
         HTTPException:\n
+        - HTTP 404 Not found: If the ID (employee as product manager) searched after does not match with an employee from the database.\n
         - HTTP 400 Bad Request: If the provided product name is already in the database.\n
         - 422 Unprocessable Entity, Pydantic: If the input data is invalid.
         """
@@ -187,7 +188,7 @@ def update_product(
 
     **Raises:**\n
         HTTPException:\n
-            - HTTP 404 Not found: If the ID searched after does not match with a product from the database.\n
+            - HTTP 404 Not found: If the ID (product OR employee as product manager) searched after does not match with a product/ employee from the database.\n
             - HTTP 400 Bad request: If there is a database error like unique constraint violation.\n
             - HTTP 422 Unprocessable Entity, Pydantic: If the input data is invalid.
     """
