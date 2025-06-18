@@ -18,11 +18,12 @@ class EmployeeBase(BaseModel):
     Common field for create and read requests.
     """
 
-    name: str = Field(min_length=1, max_length=255)
-    phone_number: str = Field(pattern=r"^\+\d{10,15}$")
-    telegram_id : Optional[int] = None
-    email: EmailStr
-    role: UserRole
+    name: str = Field(min_length=1, max_length=255, examples=["Employee Dummy"], description="Mandatory: here goes the employee full name.")
+    phone_number: str = Field(pattern=r"^\+\d{10,15}$", examples=["+4917641208453"], description="Mandatory: here goes the employees phone number.")
+    username: Optional[str] = Field(min_length=1, max_length=255, examples=["dummy321"], description="Optional: here goes the employees username.")
+    hashed_password: Optional[str] = Field(min_length=8, max_length=255, examples=["find a strong password!"], description="Optional: here goes the employees personal password.")
+    email: EmailStr = Field( examples=["dummy@example.com"], description="Mandatory: here goes the employees email address.")
+    role: UserRole = Field(examples=["general_user", "admin"], description="Mandatory: here goes the employees role.")
 
 
 class EmployeeCreate(EmployeeBase):
@@ -40,12 +41,13 @@ class EmployeeUpdate(EmployeeBase):
     All fields are optional because you don't want to update everything at the same time
     """
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    phone_number: Optional[str] = Field(None, pattern=r"^\+\d{10,15}$")
-    telegram_id: Optional[int] = None
-    email: Optional[EmailStr] = None
-    role: Optional[UserRole] = None
-    is_authenticated: Optional[bool] = None
+    name: Optional[str] = Field(Field("Optional, str"), min_length=1, max_length=255)
+    phone_number: Optional[str] = Field(Field("Optional, str"), pattern=r"^\+\d{10,15}$")
+    username: Optional[str] = Field("Optional, str")
+    hashed_password: Optional[str] = Field("Optional, str")
+    email: Optional[EmailStr] = Field("Optional, EmailStr")
+    role: Optional[UserRole] = Field("Optional, 'general_user' or 'admin'")
+    is_authenticated: Optional[bool] = Field("Optional, true or false")
 
     @model_validator(mode='after')
     def check_at_least_one_field(self):
@@ -71,8 +73,6 @@ class Employee(EmployeeBase):
     """
 
     id: uuid.UUID
-    magic_link_token: Optional[str] = None
-    magic_link_expires_at: Optional[datetime.datetime] = None
     is_authenticated: bool
     created_at: datetime.datetime
     updated_at: datetime.datetime
@@ -168,9 +168,9 @@ class ProductUpdate(BaseModel):
     to update everything at the same time.
     """
 
-    name : Optional[str] = Field("Optional, str, INFO: Only execute the fields you want to update", min_length=1, max_length=255)
-    description: Optional[str] = Field("Optional, str, INFO: and delete the rest before executing.")
-    product_manager_id: Optional[uuid.UUID] = Field("Optional, uuid, INFO: Only execute fields with updated values!")
+    name : Optional[str] = Field("Optional, str", min_length=1, max_length=255)
+    description: Optional[str] = Field("Optional, str")
+    product_manager_id: Optional[uuid.UUID] = Field("Optional, uuid")
     length: Optional[Decimal] = Field("Optional, decimal")
     height: Optional[Decimal] = Field("Optional, decimal")
     width: Optional[Decimal] = Field("Optional, decimal")

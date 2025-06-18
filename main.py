@@ -20,7 +20,7 @@ app = FastAPI(
 app.include_router(employees.employees_router)
 
 # linking the message_log_router with main.py
-app.include_router(message_logs.message_log_router)
+#app.include_router(message_logs.message_log_router)
 
 # linking the products_router with main.py
 app.include_router(products.product_router)

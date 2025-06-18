@@ -8,7 +8,7 @@ from sqlalchemy import or_
 # Import of SQLAlchemy Session (for type hints)
 from sqlalchemy.orm import Session
 
-from api.schemas import EmployeeUpdate, EmployeeCreate
+from api.schemas import EmployeeUpdate, EmployeeCreate, Employee
 # Import of SQLAlchemy ORM models
 from database import models
 
@@ -36,19 +36,30 @@ def create_employee(
         employee_data: EmployeeCreate,
         employee_service: EmployeeService = Depends(get_employee_service)
 ):
-    """ Endpoint to create a new employee.
+    """ **Endpoint to create a new employee.**
 
-    Args:
+    **Please only send used fields in the request as otherwise examples are executed and saved.**
+
+    **"name": mandatory**\n
+    **"phone_number": mandatory**\n
+    **"username": optional**\n
+    **"hashed_password": optional**\n
+    **"email": mandatory**\n
+    **"role": mandatory**\n
+
+    **Args:**\n
         employee_data (schemas.EmployeeCreate): The Pydantic model containing the details
-            for a new employee.
+            for a new employee.\n
         employee_service (EmployeeService): The injected EmployeeService instance.
 
-    Returns: db_employee: The newly created employee object incl. the automatically generated
-        ID and timestamps.
+    **Returns:**\n
+        db_employee: The newly created employee object (incl. the automatically generated
+        ID and timestamps).
 
-    Raises:
-        HTTPException: If the provided phone number or e-mail address is
-            already in the database (HTTP 400 Bad Request).
+    **Raises:**\n
+        HTTPException: \n
+            - HTTP 400 Bad Request: If the provided phone number or e-mail address is already in the database.\n
+            - HTTP 422 Unprocessable Entity, Pydantic: If the input data is invalid.
     """
 
     try:
@@ -66,16 +77,18 @@ def get_employee_by_id(
     employee_id: UUID,
     employee_service: EmployeeService = Depends(get_employee_service)
 ):
-    """ Endpoint to get an employee by ID.
+    """ **Endpoint to get an employee by ID.**
 
-    Args:
-        employee_id (UUID): A unique identifier in UUID format.
+    **Args:**\n
+        employee_id (UUID): A unique identifier in UUID format.\n
         employee_service (EmployeeService): The injected EmployeeService instance.
 
-    Returns: db_employee: The newly created employee object incl. the automatically generated
-        ID and timestamps.
+    **Returns:**\n
+        db_employee: The newly created employee object incl. the automatically generated ID and timestamps.
 
-    Raises: HTTPException: If the employee cannot be found by the passed ID (HTTP 404 Not Found)
+    **Raises:**\n
+        HTTPException:\n
+           - HTTP 404 Not Found: If the employee cannot be found by the passed ID
 
     """
 
@@ -91,18 +104,20 @@ def get_employees(
         name_query: Optional[str] = None,
         employee_service: EmployeeService = Depends(get_employee_service)
 ):
-    """ Endpoint to retrieve list of employees.
-    case-insensitive, if name_query is provided, filters employees
-    by name (case-insensitive, partial match).
+    """ **Endpoint to retrieve list of employees.**
+    **Case-insensitive, if name_query is provided, filters employees by name (case-insensitive, partial match).**
 
-    Args:
-        name_query (Optional[str]): An optional string to filter employees by name.
+    **Args:**\n
+        name_query (Optional[str]): An optional string to filter employees by name.\n
         employee_service (EmployeeService): The injected EmployeeService instance.
 
-    Returns: List[employee_schemas.Employee]: A list of all employees,
+    **Returns:**
+        List[employee_schemas.Employee]: A list of all employees,\n
         if name_query provided: A list of all employees matching the name query.
 
-    Raises: HTTPException: If the input data is invalid (422 Unprocessable Entity, Pydantic)
+    **Raises:**
+       HTTPException: - 422 Unprocessable Entity, Pydantic: If the input data is invalid.
+
     """
 
     employees = employee_service.get_all_employees(name_query=name_query)
@@ -115,22 +130,35 @@ def update_employee(
         employee_update_data: EmployeeUpdate,
         employee_service: EmployeeService = Depends(get_employee_service)
 ):
-    """ Endpoint to update at least one field of an existing employee.
+    """ **Endpoint to update at least one field of an existing employee.**
 
-    Args:
-        employee_id (UUID): A unique identifier in UUID format.
-        employee_update_data (EmployeeUpdate): An EmployeeUpdate object containing the updates.
+    **Please ensure to send at least one field to be updated.** \n
+    **Also only execute used fields as otherwise the examples are going to be updated.**
+
+    **"name": optional**\n
+    **"phone_number": optional**\n
+    **"username": optional**\n
+    **"hashed_password": optional**\n
+    **"email": optional**\n
+    **"role": optional**\n
+    **"is_authenticated": optional**\n
+
+    **Args:**\n
+        employee_id (UUID): A unique identifier in UUID format.\n
+        employee_update_data (EmployeeUpdate): An EmployeeUpdate object containing the updates.\n
         employee_service (EmployeeService): The injected EmployeeService instance.
 
-    Returns: db_employee: The updated Employee object.
+    **Returns:**\n
+        db_employee: The updated Employee object.
 
-    Raises:
-        HTTPException:
+    **Raises:**\n
+        HTTPException:\n
             - 404 Not found: If the ID searched after does not match with an
-            employee from the database.
+            employee from the database.\n
             - 400 Bad request: If there is a database error like unique constraint violation
-            (for example same phone number or e-mail)
-            - 422 Unprocessable Entity: If the input data is invalid (Pydantic)
+            (for example same phone number or e-mail)\n
+            - 422 Unprocessable Entity, Pydantic: If the input data is invalid.
+
     """
 
     try:
@@ -159,16 +187,18 @@ def delete_employee_by_id(
         employee_id: UUID,
         employee_service: EmployeeService = Depends(get_employee_service)
 ):
-    """ Endpoint to delete an employee by id.
+    """ **Endpoint to delete an employee by id.**
 
-    Args:
-        employee_id (UUID): A unique identifier in UUID format.
+    **Args:**\n
+        employee_id (UUID): A unique identifier in UUID format.\n
         employee_service (EmployeeService): The injected EmployeeService instance.
 
-    Returns: Response(status_code=status.HTTP_204_NO_CONTENT): Returns a response without body.
+    **Returns:**\n
+        Response(status_code=status.HTTP_204_NO_CONTENT): Returns a response without body.
 
-    Raises:
-        HTTPException: If the employee cannot be found by the passed ID (HTTP 404 Not Found)
+    **Raises:**\n
+        HTTPException:\n
+            - HTTP 404 Not Found: If the employee cannot be found by the passed ID.
     """
 
     try:

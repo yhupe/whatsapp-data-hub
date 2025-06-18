@@ -36,19 +36,32 @@ def create_product(
         product_data: ProductCreate,
         product_service: ProductService = Depends(get_product_service)
 ):
-    """ Endpoint to create a new product.
+    """ **Endpoint to create a new product.**
 
-        Args:
-            product_data (schemas.ProductCreate): The Pydantic model containing the details
-                for a new product.
-            product_service (ProductService): The injected ProductService instance.
+    **"name": mandatory**\n
+    **"description": optional**\n
+    **"product_manager_id": optional**\n
+    **"length": optional**\n
+    **"height": optional**\n
+    **"width": optional**\n
+    **"weight": optional**\n
+    **"image_url": optional**\n
+    **"price": mandatory**\n
+    **"stock_quantity": mandatory**\n
+    **"is_active": optional (automatically handled based on 'stock_quantity')**\n
+    **"notes": optional**\n
 
-        Returns: db_product: The newly created product object incl. the automatically generated
-            ID and timestamps.
+    **Args:**\n
+        product_data (schemas.ProductCreate): The Pydantic model containing the details for a new product.\n
+        product_service (ProductService): The injected ProductService instance.
 
-        Raises:
-            HTTPException: If the provided product name is
-                already in the database (HTTP 400 Bad Request).
+    **Returns:**\n
+        db_product: The newly created product object incl. the automatically generated ID and timestamps.
+
+    **Raises:**\n
+        HTTPException:\n
+        - HTTP 400 Bad Request: If the provided product name is already in the database.\n
+        - 422 Unprocessable Entity, Pydantic: If the input data is invalid.
         """
 
     try:
@@ -65,14 +78,17 @@ def create_product(
 def get_all_products(
     product_service: ProductService = Depends(get_product_service)
 ):
-    """ Endpoint to get all products.
+    """ **Endpoint to get all products.**
 
-    Args:
+    **Args:**\n
         product_service (ProductService): The injected ProductService instance.
 
-    Returns: db_product: The list of all product objects.
+    **Returns:**\n
+        db_product: The list of all product objects.
 
-    Raises: HTTPException: If the product cannot be found by the passed name (HTTP 404 Not Found)
+    **Raises:**\n
+        HTTPException:\n
+            - HTTP 404 Not Found:If the product cannot be found by the passed name.
 
     """
 
@@ -88,15 +104,18 @@ def search_products_by_name(
     name_query: str = Query(..., min_length=1, description="Search term for product name (case-insensitive, partial match)"),
     product_service: ProductService = Depends(get_product_service)
 ):
-    """ Endpoint to search products by name using a query parameter.
+    """ **Endpoint to search products by name using a query parameter.**
 
-    Args:
-        name_query (str): The search term for the product name.
+    **Args:**\n
+        name_query (str): The search term for the product name.\n
         product_service (ProductService): The injected ProductService instance.
 
-    Returns: db_product: A list of product objects matching the search term.
+    **Returns:**\n
+        db_product: A list of product objects matching the search term.
 
-    Raises: HTTPException: If no products are found for the given search term (HTTP 404 Not Found)
+    **Raises:**\n
+        HTTPException:\n
+            - HTTP 404 Not Found: If no products are found for the given search term.
 
     """
 
@@ -112,15 +131,18 @@ def get_product_by_id(
     product_id: UUID,
     product_service: ProductService = Depends(get_product_service)
 ):
-    """ Endpoint to get a product by ID.
+    """ **Endpoint to get a product by ID.**
 
-    Args:
-        product_id (UUID): A unique identifier in UUID format.
+    **Args:**\n
+        product_id (UUID): A unique identifier in UUID format.\n
         product_service (ProductService): The injected ProductService instance.
 
-    Returns: db_product: The product object searched for.
+    **Returns:**\n
+        db_product: The product object searched for.
 
-    Raises: HTTPException: If the product cannot be found by the passed ID (HTTP 404 Not Found)
+    **Raises:**\n
+        HTTPException:\n
+            - HTTP 404 Not Found: If the product cannot be found by the passed ID.
 
     """
 
@@ -137,21 +159,37 @@ def update_product(
         product_update_data: ProductUpdate,
         product_service: ProductService = Depends(get_product_service)
 ):
-    """ Endpoint to update at least one field of an existing product.
+    """ **Endpoint to update at least one field of an existing product.**
 
-    Args:
-        product_id (UUID): A unique identifier in UUID format.
-        product_update_data (ProductUpdate): An ProductUpdate object containing the updates.
+    **Please ensure to send at least one field to be updated.** \n
+    **Also only execute used fields as otherwise the examples are going to be updated.**
+
+    **"name": optional**\n
+    **"description": optional**\n
+    **"product_manager_id": optional**\n
+    **"length": optional**\n
+    **"height": optional**\n
+    **"width": optional**\n
+    **"weight": optional**\n
+    **"image_url": optional**\n
+    **"price": optional**\n
+    **"stock_quantity": optional**\n
+    **"is_active": optional**\n
+    **"notes": optional**\n
+
+    **Args:**\n
+        product_id (UUID): A unique identifier in UUID format.\n
+        product_update_data (ProductUpdate): An ProductUpdate object containing the updates.\n
         product_service (ProductService): The injected ProductService instance.
 
-    Returns: db_product: The updated Product object.
+    **Returns:**\n
+        db_product: The updated Product object.
 
-    Raises:
-        HTTPException:
-            - 404 Not found: If the ID searched after does not match with a
-            product from the database.
-            - 400 Bad request: If there is a database error like unique constraint violation
-            - 422 Unprocessable Entity: If the input data is invalid (Pydantic)
+    **Raises:**\n
+        HTTPException:\n
+            - HTTP 404 Not found: If the ID searched after does not match with a product from the database.\n
+            - HTTP 400 Bad request: If there is a database error like unique constraint violation.\n
+            - HTTP 422 Unprocessable Entity, Pydantic: If the input data is invalid.
     """
 
     try:
@@ -180,16 +218,18 @@ def delete_product_by_id(
         product_id: UUID,
         product_service: ProductService = Depends(get_product_service)
 ):
-    """ Endpoint to delete a product by id.
+    """ **Endpoint to delete a product by id.**
 
-    Args:
-        product_id (UUID): A unique identifier in UUID format.
+    **Args:**\n
+        product_id (UUID): A unique identifier in UUID format.\n
         product_service (ProductService): The injected ProductService instance.
 
-    Returns: Response(status_code=status.HTTP_204_NO_CONTENT): Returns a response without body.
+    **Returns:**\n
+        Response(status_code=status.HTTP_204_NO_CONTENT): Returns a response without body.
 
-    Raises:
-        HTTPException: If the product cannot be found by the passed ID (HTTP 404 Not Found)
+    **Raises:**\n
+        HTTPException:\n
+            - HTTP 404 Not Found: If the product cannot be found by the passed ID.
     """
 
     try:
