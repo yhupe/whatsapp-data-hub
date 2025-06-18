@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 import json
 from openai import OpenAI
 
@@ -144,7 +144,7 @@ class QueryInterpreterService:
 
                 """.format(db_schema_placeholder=self.db_schema)
 
-    async def interpret_query(self, user_query: str) -> Dict[str, Any]:
+    async def interpret_query(self, user_query: str) -> Tuple[Dict[str, Any], Optional[str]]:
         """
         Sends the user query to the LLM and interprets the JSON response.
         """
@@ -178,12 +178,12 @@ class QueryInterpreterService:
             if "table" not in parsed_response or "action" not in parsed_response:
                 raise ValueError("LLM response missing 'table' or 'action' key.")
 
-            return parsed_response
+            return parsed_response, llm_response_content
 
         except json.JSONDecodeError as e:
             print(f"ERROR: OpenAI did not return valid JSON: {llm_response_content} - Error: {e}")
-            return {
-                "error": f"Internal error: The AI was not able to interpret the query as valid JSON: ({e})"}
+            return {"error": f"Internal error: The AI was not able to interpret the query as valid JSON: ({e})"}, \
+                   llm_response_content if 'llm_response_content' in locals() else None
         except Exception as e:
             print(f"ERROR: Failed during OpenAI query: {e}")
-            return {"error": f"An error occurred while AI processing your query. ({e})"}
+            return {"error": f"An error occurred while AI processing your query. ({e})"}, None

@@ -99,7 +99,7 @@ class MessageLogCreate(MessageLogBase):
     and are not part of the create request.
     """
     system_response_content: Optional[str] = None
-    ai_interpreted_command: Optional[Any] = None
+    ai_interpreted_command: Optional[str] = None
 
 
 class MessageLogUpdate(BaseModel):
@@ -109,7 +109,7 @@ class MessageLogUpdate(BaseModel):
         """
 
     system_response_content: Optional[str] = None
-    ai_interpreted_command: Optional[Any] = None
+    ai_interpreted_command: Optional[str] = None
     direction: Optional[MessageDirection] = None
     error_message: Optional[str] = None
     status: Optional[MessageStatus] = None
@@ -123,7 +123,6 @@ class MessageLog(MessageLogBase):
     """
 
     id: uuid.UUID
-    raw_message_content : str
     ai_interpreted_command: Optional[str] = None
     system_response_content: Optional[str] = None
     error_message: Optional[str] = None

@@ -5,12 +5,14 @@ import json
 
 from database import models
 from database.database import get_db
+from database.models import MessageDirection, MessageStatus
 from api.schemas import MessageLogCreate, MessageLog
 from api.schemas import Employee
 from services.message_log_service import MessageLogService, get_message_log_service
 from services.employee_service import EmployeeService, get_employee_service
 from services.query_interpreter_service import QueryInterpreterService
 from services.database_query_builder_service import DatabaseQueryBuilder
+
 
 from fastapi import Depends
 
@@ -43,6 +45,7 @@ class MessageProcessingService:
         """
 
         system_response_content : Optional[str] = None  # This will hold the bot's final response
+        llm_raw_response_content: Optional[str] = None  # This will hold the AI interpretation for message logging
 
         # 1. Get employee info for personalized responses
         employee_name_for_response = "there"
@@ -52,7 +55,7 @@ class MessageProcessingService:
                 employee_name_for_response = employee_orm.name.split(' ')[0]
 
         # 2. Ask the LLM to interpret the user's query
-        llm_query_intent = await self.query_interpreter.interpret_query(raw_message_content)
+        llm_query_intent, llm_raw_response_content = await self.query_interpreter.interpret_query(raw_message_content)
 
         # 3. Check if the LLM reported an error
         if "error" in llm_query_intent and llm_query_intent["error"]:
@@ -99,11 +102,12 @@ class MessageProcessingService:
         # This creates ONE log entry containing both parts of the interaction.
         message_log_data = MessageLogCreate(
             employee_id=employee_id,
-            direction=models.MessageDirection.inbound,
+            direction=MessageDirection.inbound,  # Annahme: MessageDirection.inbound ist korrekt
             raw_message_content=raw_message_content,
-            status=models.MessageStatus.received,
+            status=MessageStatus.received,  # Annahme: MessageStatus.received ist korrekt
             phone_number=phone_number,
-            system_response_content=system_response_content
+            system_response_content=system_response_content,
+            ai_interpreted_command=llm_raw_response_content  # <--- HIER: Der rohe LLM-String wird übergeben
         )
 
         db_message_log = self.message_log_service.create_message_log(message_log_data=message_log_data)
