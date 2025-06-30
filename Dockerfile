@@ -1,10 +1,15 @@
 # Dockerfile
 
+
 FROM python:3.11-slim-bookworm
 
 
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
+
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
 
 WORKDIR /app
@@ -30,4 +35,7 @@ COPY . /app
 EXPOSE 8000
 
 
-CMD ["/usr/local/bin/gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+ENTRYPOINT ["/usr/local/bin/gunicorn"]
+
+
+CMD ["main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
