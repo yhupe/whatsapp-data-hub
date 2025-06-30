@@ -29,4 +29,4 @@ COPY . /app
 EXPOSE 8000
 
 
-CMD ["/usr/local/bin/gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+CMD ["python", "-c", "import sys; print(sys.path); from main import app; print('FastAPI app imported successfully!');"]
