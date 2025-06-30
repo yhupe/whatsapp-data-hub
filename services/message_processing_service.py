@@ -102,12 +102,12 @@ class MessageProcessingService:
         # This creates ONE log entry containing both parts of the interaction.
         message_log_data = MessageLogCreate(
             employee_id=employee_id,
-            direction=MessageDirection.inbound,  # Annahme: MessageDirection.inbound ist korrekt
+            direction=MessageDirection.inbound,
             raw_message_content=raw_message_content,
-            status=MessageStatus.received,  # Annahme: MessageStatus.received ist korrekt
+            status=MessageStatus.received,
             phone_number=phone_number,
             system_response_content=system_response_content,
-            ai_interpreted_command=llm_raw_response_content  # <--- HIER: Der rohe LLM-String wird übergeben
+            ai_interpreted_command=llm_raw_response_content
         )
 
         db_message_log = self.message_log_service.create_message_log(message_log_data=message_log_data)
