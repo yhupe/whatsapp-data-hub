@@ -45,4 +45,4 @@ EXPOSE 8000
 # This command starts the FastAPI app with Gunicorn and Uvicorn-Workern
 # 'main:app' means that the  FastAPI instance 'app' is located in file 'main.py'
 
-CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+CMD ["python", "-m", "gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
