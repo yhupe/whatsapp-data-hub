@@ -38,4 +38,4 @@ EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/gunicorn"]
 
 
-CMD ["python", "-c", "import sys; print('Python is running! sys.version:', sys.version); print('sys.path:', sys.path);"]
+CMD ["/bin/bash", "-c", "echo 'Hello from Docker container!'; sleep 60"]
