@@ -38,4 +38,4 @@ EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/gunicorn"]
 
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-c", "import sys; print('Python is running! sys.version:', sys.version); print('sys.path:', sys.path);"]
