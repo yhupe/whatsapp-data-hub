@@ -38,4 +38,4 @@ EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/gunicorn"]
 
 
-CMD ["/bin/bash", "-c", "echo 'Hello from Docker container!'; sleep 60"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
