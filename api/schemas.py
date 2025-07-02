@@ -20,9 +20,9 @@ class EmployeeBase(BaseModel):
 
     name: str = Field(min_length=1, max_length=255, examples=["Employee Dummy"], description="Mandatory: here goes the employee full name.")
     phone_number: str = Field(pattern=r"^\+\d{10,15}$", examples=["+4917641208453"], description="Mandatory: here goes the employees phone number.")
-    username: Optional[str] = Field(min_length=1, max_length=255, examples=["dummy321"], description="Optional: here goes the employees username.")
-    hashed_password: Optional[str] = Field(min_length=8, max_length=255, examples=["find a strong password!"], description="Optional: here goes the employees personal password.")
-    email: EmailStr = Field( examples=["dummy@example.com"], description="Mandatory: here goes the employees email address.")
+    username: Optional[str] = Field(None, min_length=1, max_length=255, examples=["dummy321"], description="Optional: here goes the employees username.")
+    hashed_password: Optional[str] = Field(None, min_length=8, max_length=255, examples=["find a strong password!"], description="Optional: here goes the employees personal password.")
+    email: EmailStr = Field(examples=["dummy@example.com"], description="Mandatory: here goes the employees email address.")
     role: UserRole = Field(examples=["general_user", "admin"], description="Mandatory: here goes the employees role.")
 
 
