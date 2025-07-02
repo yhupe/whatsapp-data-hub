@@ -37,6 +37,8 @@ class EmployeeService:
 
         new_employee = models.Employee(
             name=employee_data.name,
+            username=employee_data.username,
+            hashed_password=employee_data.hashed_password,
             phone_number=employee_data.phone_number,
             email=employee_data.email,
             role=employee_data.role
