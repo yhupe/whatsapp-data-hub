@@ -224,7 +224,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"are not known in the system. Please create a new account via the "
                 f"respective FastAPI-Endpoint.\n"
                 f"After you did this, come back here, share your number again and we can continue your authentication."
-                f"\n Follow the link to CREATE a new EMPLOYEE: http://127.0.0.1:8000/docs"
+                f"\n Follow the link (local and live) to POST a new EMPLOYEE: http://127.0.0.1:8000/docs or https://whatsapp-data-hub.fly.dev/docs"
             )
 
         await update.message.reply_text(response_text)
